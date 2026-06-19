@@ -18,20 +18,25 @@ public partial class WidgetWindow : Window
 {
     private readonly RegionStore _store;
     private readonly ClickEngine _engine;
+    private readonly ClickService _click;
     private readonly AppSettings _settings;
     private readonly SettingsStore _settingsStore;
     private bool _forceClose;
 
-    public WidgetWindow(RegionStore store, ClickEngine engine, AppSettings settings, SettingsStore settingsStore)
+    public WidgetWindow(RegionStore store, ClickEngine engine, ClickService click,
+        AppSettings settings, SettingsStore settingsStore)
     {
         InitializeComponent();
         _store = store;
         _engine = engine;
+        _click = click;
         _settings = settings;
         _settingsStore = settingsStore;
 
         PauseToggle.IsChecked = _engine.IsPaused;
         _store.Changed += (_, _) => Dispatcher.Invoke(RefreshList);
+        _engine.PauseChanged += (_, paused) => Dispatcher.Invoke(() => OnPauseChanged(paused));
+        _engine.RegionClicked += (_, region) => Dispatcher.BeginInvoke(() => OnRegionClicked(region));
 
         Loaded += OnLoaded;
         LocationChanged += (_, _) => CapturePosition();
@@ -111,26 +116,36 @@ public partial class WidgetWindow : Window
 
     // ---- Pause ------------------------------------------------------------------------
 
-    private void PauseToggle_Click(object sender, RoutedEventArgs e)
-    {
+    private void PauseToggle_Click(object sender, RoutedEventArgs e) =>
         SetPaused(PauseToggle.IsChecked == true);
-    }
 
-    public void SetPaused(bool paused)
+    public void SetPaused(bool paused) => _engine.IsPaused = paused;
+
+    public bool IsPaused => _engine.IsPaused;
+
+    private void OnPauseChanged(bool paused)
     {
-        _engine.IsPaused = paused;
-        _settings.Paused = paused;
+        // Single place that reflects pause state (toggle button, tray, panic key) to UI/settings.
         PauseToggle.IsChecked = paused;
+        _settings.Paused = paused;
         PersistSettings();
     }
 
-    public bool IsPaused => _engine.IsPaused;
+    // ---- Click feedback ---------------------------------------------------------------
+
+    private void OnRegionClicked(Region region)
+    {
+        if (_settings.VisualFeedback)
+            FlashRegion(region.Bounds, 180);
+        if (_settings.SoundFeedback)
+            System.Media.SystemSounds.Asterisk.Play();
+    }
 
     // ---- Region actions ---------------------------------------------------------------
 
     public void AddRegion()
     {
-        var result = RegionOverlay.Capture(this);
+        var result = RegionOverlay.Capture(IsVisible ? this : null);
         if (result is not { } draft)
             return;
 
@@ -139,9 +154,11 @@ public partial class WidgetWindow : Window
             Name = $"Region {_store.Regions.Count + 1}",
             Bounds = draft.Bounds,
             Key = draft.Key,
+            ClickType = _settings.DefaultClickType,
         };
         _store.Add(region);
         RegionListBox.SelectedItem = _store.Regions.FirstOrDefault(r => r.Id == region.Id);
+        WarnIfConflict(region);
     }
 
     private void Add_Click(object sender, RoutedEventArgs e) => AddRegion();
@@ -155,14 +172,17 @@ public partial class WidgetWindow : Window
         if (RegionListBox.SelectedItem is not Region region)
             return;
 
-        var editor = new RegionEditorWindow(region) { Owner = this };
+        var editor = new RegionEditorWindow(region, _store) { Owner = this };
         if (editor.ShowDialog() != true)
             return;
 
         if (editor.Deleted)
             _store.Remove(region.Id);
         else
+        {
             _store.Update();
+            WarnIfConflict(region);
+        }
     }
 
     private void Delete_Click(object sender, RoutedEventArgs e)
@@ -178,11 +198,20 @@ public partial class WidgetWindow : Window
     private void Flash_Click(object sender, RoutedEventArgs e)
     {
         if (RegionListBox.SelectedItem is Region region)
-            FlashRegion(region.Bounds);
+            FlashRegion(region.Bounds, 700);
     }
 
-    /// <summary>Briefly highlights a region on screen so the user can confirm its location.</summary>
-    public static void FlashRegion(ScreenRect bounds)
+    private void WarnIfConflict(Region region)
+    {
+        if (_store.DuplicateKeys().Contains(region.Key))
+            MessageBox.Show(
+                $"The key {region.Key.Display} is now assigned to more than one region. " +
+                "Only the first will fire — give them distinct keys.",
+                "ClickMap — key conflict", MessageBoxButton.OK, MessageBoxImage.Warning);
+    }
+
+    /// <summary>Briefly highlights a region on screen (click-through) so the user can locate it.</summary>
+    public static void FlashRegion(ScreenRect bounds, int milliseconds)
     {
         var flash = new Window
         {
@@ -192,6 +221,8 @@ public partial class WidgetWindow : Window
             ShowInTaskbar = false,
             Topmost = true,
             ResizeMode = ResizeMode.NoResize,
+            IsHitTestVisible = false,
+            Focusable = false,
             Content = new System.Windows.Controls.Border
             {
                 BorderBrush = System.Windows.Media.Brushes.DeepSkyBlue,
@@ -204,13 +235,17 @@ public partial class WidgetWindow : Window
         flash.SourceInitialized += (_, _) =>
         {
             IntPtr hwnd = new WindowInteropHelper(flash).Handle;
+            // Click-through, no activation, hidden from Alt-Tab.
+            int ex = GetWindowLong(hwnd, GWL_EXSTYLE);
+            SetWindowLong(hwnd, GWL_EXSTYLE,
+                ex | WS_EX_TRANSPARENT | WS_EX_LAYERED | WS_EX_NOACTIVATE | WS_EX_TOOLWINDOW);
             SetWindowPos(hwnd, HWND_TOPMOST, bounds.Left, bounds.Top, bounds.Width, bounds.Height,
                 SWP_SHOWWINDOW | SWP_NOACTIVATE);
         };
 
         flash.Show();
 
-        var timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(700) };
+        var timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(milliseconds) };
         timer.Tick += (_, _) =>
         {
             timer.Stop();
@@ -220,6 +255,28 @@ public partial class WidgetWindow : Window
     }
 
     // ---- Settings ---------------------------------------------------------------------
+
+    private void Settings_Click(object sender, RoutedEventArgs e) => OpenSettings();
+
+    public void OpenSettings()
+    {
+        var dlg = new SettingsWindow(_settings);
+        if (IsVisible) dlg.Owner = this;
+        if (dlg.ShowDialog() != true)
+            return;
+
+        ApplySettings();
+        StartupRegistration.Set(_settings.StartWithWindows);
+        PersistSettings();
+        Log.Info("Settings updated.");
+    }
+
+    /// <summary>Pushes the current settings into the live services. Safe to call repeatedly.</summary>
+    public void ApplySettings()
+    {
+        _click.MoveCursorToTarget = _settings.MoveCursorToTarget;
+        _engine.PanicKey = _settings.PanicKey;
+    }
 
     private void CapturePosition()
     {

@@ -17,6 +17,7 @@ public sealed class ClickEngine : IDisposable
     private readonly HotkeyService _hotkeys;
     private readonly RegionStore _store;
     private readonly ClickService _click;
+    private bool _paused;
 
     public ClickEngine(HotkeyService hotkeys, RegionStore store, ClickService click)
     {
@@ -27,14 +28,38 @@ public sealed class ClickEngine : IDisposable
     }
 
     /// <summary>When true, matched keys are ignored (and passed through to other apps).</summary>
-    public bool IsPaused { get; set; }
+    public bool IsPaused
+    {
+        get => _paused;
+        set
+        {
+            if (_paused == value) return;
+            _paused = value;
+            PauseChanged?.Invoke(this, _paused);
+        }
+    }
+
+    /// <summary>Global key that instantly toggles <see cref="IsPaused"/>; null disables it.</summary>
+    public KeyCombo? PanicKey { get; set; }
+
+    /// <summary>Raised whenever <see cref="IsPaused"/> changes (including via the panic key).</summary>
+    public event EventHandler<bool>? PauseChanged;
 
     /// <summary>Raised after a click is dispatched for a region (for UI feedback/logging).</summary>
     public event EventHandler<Region>? RegionClicked;
 
     private void OnHotkeyPressed(object? sender, HotkeyPressedEventArgs e)
     {
-        if (IsPaused)
+        // Panic key is checked first so it works even while paused (to resume).
+        if (PanicKey is { } panic && e.Combo == panic)
+        {
+            e.Suppress = true;
+            IsPaused = !IsPaused;
+            Log.Info($"Panic key {panic.Display} -> {(IsPaused ? "paused" : "resumed")}");
+            return;
+        }
+
+        if (_paused)
             return;
 
         if (!_store.TryGetByKey(e.Combo, out var region) || region is null)
@@ -53,10 +78,10 @@ public sealed class ClickEngine : IDisposable
                 _click.ClickAt(x, y, clickType);
                 RegionClicked?.Invoke(this, region);
             }
-            catch
+            catch (Exception ex)
             {
-                // A single failed SendInput must not tear down the engine; ignore and
-                // wait for the next key. (Surfaced via logging in a later phase.)
+                // A single failed SendInput must not tear down the engine.
+                Log.Error($"Click dispatch failed for region '{region.Name}'", ex);
             }
         });
     }

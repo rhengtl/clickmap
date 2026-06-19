@@ -31,13 +31,16 @@
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
                 <TextBlock Grid.Column="0" Text="ClickMap" Foreground="White"
                            FontWeight="SemiBold" FontSize="14" VerticalAlignment="Center" />
                 <ToggleButton Grid.Column="1" x:Name="PauseToggle" Content="Pause"
                               Foreground="White" Background="#2E2E2E" Padding="8,2" Margin="0,0,6,0"
                               Click="PauseToggle_Click" />
-                <Button Grid.Column="2" Content="—" Foreground="White" Background="#2E2E2E"
+                <Button Grid.Column="2" Content="⚙" Foreground="White" Background="#2E2E2E"
+                        Width="26" Padding="0" Margin="0,0,6,0" Click="Settings_Click" ToolTip="Settings" />
+                <Button Grid.Column="3" Content="—" Foreground="White" Background="#2E2E2E"
                         Width="26" Padding="0" Click="Hide_Click" ToolTip="Hide to tray" />
             </Grid>
 

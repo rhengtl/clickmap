@@ -1,6 +1,7 @@
 using System.Windows;
 using System.Windows.Input;
 using ClickMap.Models;
+using ClickMap.Persistence;
 
 namespace ClickMap.UI;
 
@@ -11,16 +12,18 @@ namespace ClickMap.UI;
 public partial class RegionEditorWindow : Window
 {
     private readonly Region _region;
+    private readonly RegionStore? _store;
     private KeyCombo _key;
     private bool _capturingKey;
 
     /// <summary>True when the user chose to delete the region (DialogResult is also true).</summary>
     public bool Deleted { get; private set; }
 
-    public RegionEditorWindow(Region region)
+    public RegionEditorWindow(Region region, RegionStore? store = null)
     {
         InitializeComponent();
         _region = region;
+        _store = store;
         _key = region.Key;
 
         NameBox.Text = region.Name;
@@ -28,6 +31,19 @@ public partial class RegionEditorWindow : Window
         ClickTypeBox.SelectedItem = region.ClickType;
         EnabledCheck.IsChecked = region.Enabled;
         KeyButton.Content = _key.Display;
+        UpdateConflictWarning();
+    }
+
+    /// <summary>Shows a warning when another region already uses the chosen key.</summary>
+    private void UpdateConflictWarning()
+    {
+        bool conflict = _store is not null
+            && _store.Regions.Any(r => r.Id != _region.Id && r.Key == _key);
+
+        ConflictWarning.Text = conflict
+            ? $"Another region already uses {_key.Display}. Only one will fire."
+            : string.Empty;
+        ConflictWarning.Visibility = conflict ? Visibility.Visible : Visibility.Collapsed;
     }
 
     private void KeyButton_Click(object sender, RoutedEventArgs e)
@@ -55,6 +71,7 @@ public partial class RegionEditorWindow : Window
             _key = InputCapture.FromKeyEvent(e);
             _capturingKey = false;
             KeyButton.Content = _key.Display;
+            UpdateConflictWarning();
             e.Handled = true;
         }
     }

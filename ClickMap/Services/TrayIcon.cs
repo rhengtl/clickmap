@@ -32,6 +32,7 @@ public sealed class TrayIcon : IDisposable
             _widget.ShowFromTray();
             _widget.AddRegion();
         });
+        menu.Items.Add("Settings…", null, (_, _) => _widget.OpenSettings());
         menu.Items.Add(new WinForms.ToolStripSeparator());
         menu.Items.Add("Exit", null, (_, _) => onExit());
 
