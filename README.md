@@ -122,6 +122,10 @@ sequences, and import/export. The service separation (`HotkeyService` / `ClickSe
 
 ---
 
+## License
+
+Released under the [MIT License](LICENSE).
+
 ## Note on responsible use
 
 ClickMap synthesizes standard input for productivity and accessibility. Don't use it to
