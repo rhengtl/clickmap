@@ -3,20 +3,38 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         WindowStyle="None" AllowsTransparency="True" ShowInTaskbar="False"
         Topmost="True" ResizeMode="NoResize" WindowStartupLocation="Manual"
-        Background="#33000000" Cursor="Cross">
-    <Canvas x:Name="RootCanvas">
-        <Border x:Name="Banner" Canvas.Left="0" Canvas.Top="0"
-                Background="#CC202020" CornerRadius="6" Padding="16,10" Margin="0">
-            <TextBlock x:Name="InstructionText" Foreground="White" FontSize="14"
-                       Text="Drag to select a region.  Esc to cancel." />
-        </Border>
+        Background="#40000000" Cursor="Cross" FontFamily="{StaticResource Font.Ui}">
+    <Grid>
+        <Canvas x:Name="RootCanvas">
+            <Rectangle x:Name="Selection" Visibility="Collapsed"
+                       Stroke="{StaticResource B.Orange}" StrokeThickness="2"
+                       StrokeDashArray="5 3" Fill="#26FF8A1E" RadiusX="2" RadiusY="2" />
 
-        <Rectangle x:Name="Selection" Visibility="Collapsed"
-                   Stroke="#FF3DA5FF" StrokeThickness="2" Fill="#333DA5FF" />
+            <Border x:Name="SizeTip" Visibility="Collapsed" Background="#E6101216"
+                    BorderBrush="{StaticResource B.Orange}" BorderThickness="1"
+                    CornerRadius="5" Padding="7,3">
+                <TextBlock x:Name="SizeText" Foreground="{StaticResource B.Text}" FontSize="12" FontWeight="SemiBold" />
+            </Border>
+        </Canvas>
 
-        <Border x:Name="SizeTip" Visibility="Collapsed" Background="#CC000000"
-                CornerRadius="3" Padding="6,2">
-            <TextBlock x:Name="SizeText" Foreground="White" FontSize="12" />
+        <!-- Guidance banner, centered near the top -->
+        <Border x:Name="Banner" VerticalAlignment="Top" HorizontalAlignment="Center" Margin="0,40,0,0"
+                Background="#E6101216" BorderBrush="{StaticResource B.Border}" BorderThickness="1"
+                CornerRadius="10" Padding="18,12">
+            <Border.Effect>
+                <DropShadowEffect BlurRadius="20" ShadowDepth="0" Opacity="0.5" Color="#000000" />
+            </Border.Effect>
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                <Image Source="/ClickMap.png" Width="26" Height="26" Margin="0,0,12,0"
+                       RenderOptions.BitmapScalingMode="HighQuality" />
+                <StackPanel>
+                    <TextBlock x:Name="InstructionText" Foreground="{StaticResource B.Text}"
+                               FontSize="14" FontWeight="SemiBold"
+                               Text="Drag to select a region" />
+                    <TextBlock Foreground="{StaticResource B.TextMuted}" FontSize="12" Margin="0,2,0,0"
+                               Text="Press Esc to cancel" />
+                </StackPanel>
+            </StackPanel>
         </Border>
-    </Canvas>
+    </Grid>
 </Window>

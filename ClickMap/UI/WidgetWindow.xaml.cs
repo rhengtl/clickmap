@@ -1,4 +1,5 @@
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Threading;
@@ -67,9 +68,44 @@ public partial class WidgetWindow : Window
     private void RefreshList()
     {
         Guid? selectedId = (RegionListBox.SelectedItem as Region)?.Id;
-        RegionListBox.ItemsSource = _store.Regions.ToList();
+        var regions = _store.Regions.ToList();
+        RegionListBox.ItemsSource = regions;
         if (selectedId is Guid id)
-            RegionListBox.SelectedItem = _store.Regions.FirstOrDefault(r => r.Id == id);
+            RegionListBox.SelectedItem = regions.FirstOrDefault(r => r.Id == id);
+
+        EmptyState.Visibility = regions.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+        CountText.Text = regions.Count == 0
+            ? string.Empty
+            : $"{regions.Count} region{(regions.Count == 1 ? "" : "s")}";
+        UpdateActionButtons();
+    }
+
+    private void RegionListBox_SelectionChanged(object sender, SelectionChangedEventArgs e) =>
+        UpdateActionButtons();
+
+    private void UpdateActionButtons()
+    {
+        bool hasSelection = RegionListBox.SelectedItem is Region;
+        EditButton.IsEnabled = hasSelection;
+        FlashButton.IsEnabled = hasSelection;
+        DeleteButton.IsEnabled = hasSelection;
+    }
+
+    private void Window_KeyDown(object sender, KeyEventArgs e)
+    {
+        if (RegionListBox.SelectedItem is not Region)
+            return;
+
+        if (e.Key == Key.Delete)
+        {
+            Delete_Click(sender, e);
+            e.Handled = true;
+        }
+        else if (e.Key == Key.Enter || e.Key == Key.F2)
+        {
+            EditSelected();
+            e.Handled = true;
+        }
     }
 
     // ---- Window chrome ----------------------------------------------------------------

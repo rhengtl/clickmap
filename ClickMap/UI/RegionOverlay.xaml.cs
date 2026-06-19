@@ -102,7 +102,7 @@ public partial class RegionOverlay : Window
         }
 
         _awaitingKey = true;
-        InstructionText.Text = "Press the key to assign to this region.  Esc to cancel.";
+        InstructionText.Text = "Press the key to assign";
     }
 
     protected override void OnPreviewKeyDown(KeyEventArgs e)

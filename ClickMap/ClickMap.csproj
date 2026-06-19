@@ -30,4 +30,9 @@
     <Using Remove="System.Drawing" />
   </ItemGroup>
 
+  <!-- Branding asset embedded for use in the UI (logo / empty state). -->
+  <ItemGroup>
+    <Resource Include="ClickMap.png" />
+  </ItemGroup>
+
 </Project>

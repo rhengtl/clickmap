@@ -96,4 +96,12 @@ public partial class RegionEditorWindow : Window
     }
 
     private void Cancel_Click(object sender, RoutedEventArgs e) => DialogResult = false;
+
+    private void Close_Click(object sender, RoutedEventArgs e) => DialogResult = false;
+
+    private void Header_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        if (e.ButtonState == MouseButtonState.Pressed)
+            DragMove();
+    }
 }
