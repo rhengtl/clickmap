@@ -1,0 +1,38 @@
+<Window x:Class="ClickMap.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="ClickMap — Phase 1 Harness" Height="420" Width="460"
+        WindowStartupLocation="CenterScreen" ResizeMode="CanMinimize">
+    <Grid Margin="14">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0" TextWrapping="Wrap" Margin="0,0,0,10"
+                   Text="Phase 1 input/click core. Press the test key (F8) anywhere — even with another app focused — and a left click fires at the target point below." />
+
+        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,8">
+            <TextBlock Text="Hook status: " VerticalAlignment="Center" />
+            <TextBlock x:Name="StatusText" Text="(starting…)" FontWeight="Bold" VerticalAlignment="Center" />
+        </StackPanel>
+
+        <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,0,0,8">
+            <TextBlock Text="Target point: " VerticalAlignment="Center" />
+            <TextBlock x:Name="TargetText" Text="—" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,12,0" />
+            <Button x:Name="SetTargetButton" Content="Set target to cursor (3s)" Padding="8,3" Click="SetTargetButton_Click" />
+        </StackPanel>
+
+        <StackPanel Grid.Row="3" Orientation="Horizontal" Margin="0,0,0,8">
+            <CheckBox x:Name="MoveCursorCheck" Content="Move cursor to target before clicking" IsChecked="True" />
+        </StackPanel>
+
+        <Border Grid.Row="4" BorderBrush="#CCCCCC" BorderThickness="1" CornerRadius="3">
+            <TextBox x:Name="LogBox" IsReadOnly="True" VerticalScrollBarVisibility="Auto"
+                     TextWrapping="NoWrap" FontFamily="Consolas" Background="#FAFAFA" BorderThickness="0" />
+        </Border>
+    </Grid>
+</Window>
