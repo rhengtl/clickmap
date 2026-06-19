@@ -17,7 +17,7 @@ public sealed class TrayIcon : IDisposable
     public TrayIcon(WidgetWindow widget, Action onExit)
     {
         _widget = widget;
-        _generatedIcon = BuildIcon();
+        _generatedIcon = LoadAppIcon() ?? BuildIcon();
 
         var menu = new WinForms.ContextMenuStrip();
         menu.Items.Add("Show / hide", null, (_, _) => ToggleWidget());
@@ -57,7 +57,21 @@ public sealed class TrayIcon : IDisposable
             _widget.ShowFromTray();
     }
 
-    // Placeholder icon (a blue dot) until a real asset is added in Phase 5.
+    // Prefer the executable's own icon (the embedded ClickMap.ico) for a crisp tray glyph.
+    private static Icon? LoadAppIcon()
+    {
+        try
+        {
+            string? exe = Environment.ProcessPath;
+            return exe is null ? null : Icon.ExtractAssociatedIcon(exe);
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    // Fallback icon (a blue dot) if the executable icon can't be read.
     private static Icon BuildIcon()
     {
         using var bmp = new Bitmap(32, 32);
