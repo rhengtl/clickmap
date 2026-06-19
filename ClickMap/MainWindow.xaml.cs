@@ -1,97 +1,117 @@
+using System.Diagnostics;
+using System.IO;
 using System.Windows;
-using ClickMap.Interop;
 using ClickMap.Models;
+using ClickMap.Persistence;
 using ClickMap.Services;
 
 namespace ClickMap;
 
 /// <summary>
-/// Phase 1 manual harness: validates the global keyboard hook + SendInput click pipeline.
-/// Press F8 anywhere and a left click is dispatched at the chosen target point.
+/// Phase 2 manual harness: loads regions from <c>%APPDATA%\ClickMap\regions.json</c> and
+/// dispatches clicks when their assigned keys are pressed. Validates the
+/// HotkeyService → RegionStore → ClickService pipeline end to end.
 /// </summary>
 public partial class MainWindow : Window
 {
-    private const ushort TestKeyVk = 0x77; // F8
-
     private readonly HotkeyService _hotkeys = new();
     private readonly ClickService _click = new();
-    private System.Windows.Point _target = new(960, 540); // sensible default; override via the button
+    private readonly RegionStore _store = new();
+    private readonly ClickEngine _engine;
 
     public MainWindow()
     {
         InitializeComponent();
-        UpdateTargetText();
 
-        _hotkeys.HotkeyPressed += OnHotkeyPressed;
+        _engine = new ClickEngine(_hotkeys, _store, _click);
+        _engine.RegionClicked += (_, region) => Dispatcher.Invoke(() =>
+            Log($"Click @ ({region.Bounds.CenterX},{region.Bounds.CenterY})  [{region.Key.Display}]  {region.Name}"));
+
+        _store.Changed += (_, _) => Dispatcher.Invoke(RefreshRegionList);
+        _store.LoadWarning += (_, msg) => Dispatcher.Invoke(() => Log("WARN: " + msg));
+
         _hotkeys.HookFailed += (_, ex) => Dispatcher.Invoke(() =>
         {
             StatusText.Text = "FAILED";
             Log(ex.Message);
         });
 
+        PathText.Text = _store.FilePath;
+
         Loaded += (_, _) =>
         {
+            _store.Load();
             _hotkeys.Start();
-            StatusText.Text = _hotkeys.IsRunning ? "installed (press F8)" : "not running";
-            Log($"Hook {(_hotkeys.IsRunning ? "installed" : "failed")}. Test key = F8.");
+            StatusText.Text = _hotkeys.IsRunning ? "installed" : "not running";
+            Log($"Hook {(_hotkeys.IsRunning ? "installed" : "failed")}; {_store.Regions.Count} region(s) loaded.");
+            WarnDuplicates();
         };
 
-        Closed += (_, _) => _hotkeys.Dispose();
+        Closed += (_, _) =>
+        {
+            _engine.Dispose();
+            _hotkeys.Dispose();
+        };
     }
 
-    private void OnHotkeyPressed(object? sender, HotkeyPressedEventArgs e)
+    private void RefreshRegionList()
     {
-        // Runs on the hook thread — keep it cheap: match, then offload the click.
-        if (e.Combo.Vk != TestKeyVk)
-            return;
+        RegionList.ItemsSource = _store.Regions
+            .Select(r => new RegionRow(r.Name, r.Key, r.ClickType,
+                $"{r.Bounds.CenterX}, {r.Bounds.CenterY}", r.Enabled))
+            .ToList();
+    }
 
-        e.Suppress = true; // swallow F8 so it doesn't reach other apps during testing
+    private void WarnDuplicates()
+    {
+        foreach (var key in _store.DuplicateKeys())
+            Log($"WARN: key {key.Display} is assigned to multiple regions (first wins).");
+    }
 
-        var target = _target;
-        bool move = false;
-        // Read UI-bound option without blocking the hook thread on the dispatcher.
-        Dispatcher.Invoke(() => move = MoveCursorCheck.IsChecked == true);
-        _click.MoveCursorToTarget = move;
+    private void Reload_Click(object sender, RoutedEventArgs e)
+    {
+        _store.Load();
+        Log($"Reloaded; {_store.Regions.Count} region(s).");
+        WarnDuplicates();
+    }
 
-        Task.Run(() =>
+    private void OpenFolder_Click(object sender, RoutedEventArgs e)
+    {
+        Directory.CreateDirectory(_store.Directory);
+        Process.Start(new ProcessStartInfo("explorer.exe", _store.Directory) { UseShellExecute = true });
+    }
+
+    private void WriteSample_Click(object sender, RoutedEventArgs e)
+    {
+        // Two sample regions so the pipeline can be tested without the (Phase 3) UI.
+        _store.Add(new Region
         {
-            try
-            {
-                _click.ClickAt(target, ClickType.LeftClick);
-                Dispatcher.Invoke(() => Log($"Click @ ({target.X:0},{target.Y:0})  [{e.Combo.Display}]"));
-            }
-            catch (Exception ex)
-            {
-                Dispatcher.Invoke(() => Log("Click error: " + ex.Message));
-            }
+            Name = "Center box",
+            Bounds = new ScreenRect(860, 440, 200, 200), // center ~ (960, 540)
+            Key = new KeyCombo(0x77), // F8
+            ClickType = ClickType.LeftClick,
         });
+        _store.Add(new Region
+        {
+            Name = "Top-left box",
+            Bounds = new ScreenRect(100, 100, 160, 100), // center (180, 150)
+            Key = new KeyCombo(0x78), // F9
+            ClickType = ClickType.LeftClick,
+        });
+        Log($"Wrote sample regions to {_store.FilePath}.");
     }
 
-    private async void SetTargetButton_Click(object sender, RoutedEventArgs e)
+    private void PauseCheck_Changed(object sender, RoutedEventArgs e)
     {
-        SetTargetButton.IsEnabled = false;
-        for (int i = 3; i >= 1; i--)
-        {
-            SetTargetButton.Content = $"Move mouse… capturing in {i}";
-            await Task.Delay(1000);
-        }
-
-        if (NativeMethods.GetCursorPos(out var p))
-        {
-            _target = new System.Windows.Point(p.X, p.Y);
-            UpdateTargetText();
-            Log($"Target set to ({p.X},{p.Y}).");
-        }
-
-        SetTargetButton.Content = "Set target to cursor (3s)";
-        SetTargetButton.IsEnabled = true;
+        _engine.IsPaused = PauseCheck.IsChecked == true;
+        Log(_engine.IsPaused ? "Dispatch paused." : "Dispatch resumed.");
     }
-
-    private void UpdateTargetText() => TargetText.Text = $"({_target.X:0}, {_target.Y:0})";
 
     private void Log(string message)
     {
         LogBox.AppendText($"{DateTime.Now:HH:mm:ss}  {message}{Environment.NewLine}");
         LogBox.ScrollToEnd();
     }
+
+    private sealed record RegionRow(string Name, KeyCombo Key, ClickType ClickType, string CenterLabel, bool Enabled);
 }

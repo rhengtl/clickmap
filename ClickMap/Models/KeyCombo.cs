@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace ClickMap.Models;
 
 [Flags]
@@ -18,6 +20,7 @@ public enum KeyModifiers
 public readonly record struct KeyCombo(ushort Vk, KeyModifiers Modifiers = KeyModifiers.None)
 {
     /// <summary>A human-friendly label, e.g. <c>"Ctrl+Shift+F8"</c>.</summary>
+    [JsonIgnore]
     public string Display
     {
         get

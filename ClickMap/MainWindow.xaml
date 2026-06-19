@@ -1,36 +1,56 @@
 <Window x:Class="ClickMap.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="ClickMap — Phase 1 Harness" Height="420" Width="460"
-        WindowStartupLocation="CenterScreen" ResizeMode="CanMinimize">
+        Title="ClickMap — Phase 2 Harness" Height="520" Width="560"
+        WindowStartupLocation="CenterScreen" ResizeMode="CanResizeWithGrip">
     <Grid Margin="14">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
         <TextBlock Grid.Row="0" TextWrapping="Wrap" Margin="0,0,0,10"
-                   Text="Phase 1 input/click core. Press the test key (F8) anywhere — even with another app focused — and a left click fires at the target point below." />
+                   Text="Phase 2: regions are loaded from regions.json. Press a region's assigned key anywhere and a click fires at that region's center." />
 
-        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,8">
-            <TextBlock Text="Hook status: " VerticalAlignment="Center" />
-            <TextBlock x:Name="StatusText" Text="(starting…)" FontWeight="Bold" VerticalAlignment="Center" />
+        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,6">
+            <TextBlock Text="Hook: " VerticalAlignment="Center" />
+            <TextBlock x:Name="StatusText" Text="(starting…)" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,16,0" />
+            <CheckBox x:Name="PauseCheck" Content="Pause dispatch" VerticalAlignment="Center" Checked="PauseCheck_Changed" Unchecked="PauseCheck_Changed" />
         </StackPanel>
 
-        <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,0,0,8">
-            <TextBlock Text="Target point: " VerticalAlignment="Center" />
-            <TextBlock x:Name="TargetText" Text="—" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,12,0" />
-            <Button x:Name="SetTargetButton" Content="Set target to cursor (3s)" Padding="8,3" Click="SetTargetButton_Click" />
+        <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,0,0,6">
+            <TextBlock Text="File: " VerticalAlignment="Center" />
+            <TextBlock x:Name="PathText" Text="—" VerticalAlignment="Center" FontFamily="Consolas" TextTrimming="CharacterEllipsis" />
         </StackPanel>
 
         <StackPanel Grid.Row="3" Orientation="Horizontal" Margin="0,0,0,8">
-            <CheckBox x:Name="MoveCursorCheck" Content="Move cursor to target before clicking" IsChecked="True" />
+            <Button Content="Reload" Padding="10,3" Margin="0,0,8,0" Click="Reload_Click" />
+            <Button Content="Open folder" Padding="10,3" Margin="0,0,8,0" Click="OpenFolder_Click" />
+            <Button Content="Write sample regions.json" Padding="10,3" Click="WriteSample_Click" />
         </StackPanel>
 
-        <Border Grid.Row="4" BorderBrush="#CCCCCC" BorderThickness="1" CornerRadius="3">
+        <TextBlock Grid.Row="4" Text="Loaded regions:" FontWeight="Bold" Margin="0,4,0,4" />
+
+        <Border Grid.Row="5" BorderBrush="#CCCCCC" BorderThickness="1" CornerRadius="3" Margin="0,0,0,8">
+            <ListView x:Name="RegionList" BorderThickness="0">
+                <ListView.View>
+                    <GridView>
+                        <GridViewColumn Header="Name" Width="150" DisplayMemberBinding="{Binding Name}" />
+                        <GridViewColumn Header="Key" Width="110" DisplayMemberBinding="{Binding Key.Display}" />
+                        <GridViewColumn Header="Click" Width="90" DisplayMemberBinding="{Binding ClickType}" />
+                        <GridViewColumn Header="Center" Width="110" DisplayMemberBinding="{Binding CenterLabel}" />
+                        <GridViewColumn Header="On" Width="40" DisplayMemberBinding="{Binding Enabled}" />
+                    </GridView>
+                </ListView.View>
+            </ListView>
+        </Border>
+
+        <Border Grid.Row="6" BorderBrush="#CCCCCC" BorderThickness="1" CornerRadius="3">
             <TextBox x:Name="LogBox" IsReadOnly="True" VerticalScrollBarVisibility="Auto"
                      TextWrapping="NoWrap" FontFamily="Consolas" Background="#FAFAFA" BorderThickness="0" />
         </Border>
