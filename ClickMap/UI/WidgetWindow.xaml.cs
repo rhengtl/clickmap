@@ -14,7 +14,7 @@ namespace ClickMap.UI;
 
 /// <summary>
 /// The always-on-top floating widget: lists click targets, toggles pause, and drives the
-/// create/edit/delete/flash loop. Closing hides to tray; <see cref="ForceClose"/> really
+/// create/edit/delete/show-hide loop. Closing hides to tray; <see cref="ForceClose"/> really
 /// exits.
 /// </summary>
 public partial class WidgetWindow : Window
@@ -69,33 +69,67 @@ public partial class WidgetWindow : Window
 
     private void RefreshList()
     {
-        Guid? selectedId = (TargetListBox.SelectedItem as ClickTarget)?.Id;
+        var selectedIds = SelectedTargets.Select(t => t.Id).ToHashSet();
         var targets = _store.Targets.ToList();
         TargetListBox.ItemsSource = targets;
-        if (selectedId is Guid id)
-            TargetListBox.SelectedItem = targets.FirstOrDefault(t => t.Id == id);
+        foreach (var t in targets.Where(t => selectedIds.Contains(t.Id)))
+            TargetListBox.SelectedItems.Add(t);
 
         EmptyState.Visibility = targets.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
-        CountText.Text = targets.Count == 0
-            ? string.Empty
-            : $"{targets.Count} target{(targets.Count == 1 ? "" : "s")}";
-        UpdateActionButtons();
+        SelectAllCheck.Visibility = targets.Count > 1 ? Visibility.Visible : Visibility.Collapsed;
+        SyncMarkers();
+        UpdateSelectionState();
     }
 
-    private void TargetListBox_SelectionChanged(object sender, SelectionChangedEventArgs e) =>
-        UpdateActionButtons();
+    /// <summary>The currently selected targets, in list order.</summary>
+    private List<ClickTarget> SelectedTargets => TargetListBox.SelectedItems.Cast<ClickTarget>().ToList();
 
-    private void UpdateActionButtons()
+    private void TargetListBox_SelectionChanged(object sender, SelectionChangedEventArgs e) =>
+        UpdateSelectionState();
+
+    // Single place that reflects the selection into the buttons, the count, and the
+    // select-all box (checked = all, dash = some, empty = none).
+    private void UpdateSelectionState()
     {
-        bool hasSelection = TargetListBox.SelectedItem is ClickTarget;
-        EditButton.IsEnabled = hasSelection;
-        FlashButton.IsEnabled = hasSelection;
-        DeleteButton.IsEnabled = hasSelection;
+        int total = TargetListBox.Items.Count;
+        int selected = TargetListBox.SelectedItems.Count;
+
+        EditButton.IsEnabled = selected == 1;
+        ShowHideButton.IsEnabled = selected >= 1;
+        ShowHideButton.Content = SelectedTargets.Any(IsShown) ? "Hide" : "Show";
+        DeleteButton.IsEnabled = selected >= 1;
+
+        SelectAllCheck.IsChecked = selected == 0 ? false : selected == total ? true : null;
+
+        CountText.Text = total == 0 ? string.Empty
+            : selected > 1 ? $"{selected} of {total} selected"
+            : $"{total} target{(total == 1 ? "" : "s")}";
+    }
+
+    private void SelectAll_Click(object sender, RoutedEventArgs e)
+    {
+        if (SelectAllCheck.IsChecked == true)
+            TargetListBox.SelectAll();
+        else
+            TargetListBox.UnselectAll();
+    }
+
+    private void SelectOnly(ClickTarget target)
+    {
+        TargetListBox.SelectedItems.Clear();
+        TargetListBox.SelectedItems.Add(target);
     }
 
     private void Window_KeyDown(object sender, KeyEventArgs e)
     {
-        if (TargetListBox.SelectedItem is not ClickTarget)
+        if (e.Key == Key.A && Keyboard.Modifiers == ModifierKeys.Control && TargetListBox.Items.Count > 0)
+        {
+            TargetListBox.SelectAll();
+            e.Handled = true;
+            return;
+        }
+
+        if (TargetListBox.SelectedItems.Count == 0)
             return;
 
         if (e.Key == Key.Delete)
@@ -103,7 +137,7 @@ public partial class WidgetWindow : Window
             Delete_Click(sender, e);
             e.Handled = true;
         }
-        else if (e.Key == Key.Enter || e.Key == Key.F2)
+        else if ((e.Key == Key.Enter || e.Key == Key.F2) && TargetListBox.SelectedItems.Count == 1)
         {
             EditSelected();
             e.Handled = true;
@@ -148,6 +182,7 @@ public partial class WidgetWindow : Window
     /// <summary>Called by the app on real shutdown to actually close the window.</summary>
     public void ForceClose()
     {
+        HideAllMarkers();
         _forceClose = true;
         Close();
     }
@@ -195,7 +230,7 @@ public partial class WidgetWindow : Window
             ClickType = _settings.DefaultClickType,
         };
         _store.Add(target);
-        TargetListBox.SelectedItem = _store.Targets.FirstOrDefault(t => t.Id == target.Id);
+        SelectOnly(target);
         WarnIfConflict(target);
     }
 
@@ -203,11 +238,21 @@ public partial class WidgetWindow : Window
 
     private void Edit_Click(object sender, RoutedEventArgs e) => EditSelected();
 
-    private void TargetListBox_MouseDoubleClick(object sender, MouseButtonEventArgs e) => EditSelected();
+    private void TargetListBox_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+    {
+        // Double-clicking a row edits that row alone, whatever else was selected.
+        if (e.OriginalSource is DependencyObject src
+            && ItemsControl.ContainerFromElement(TargetListBox, src) is ListBoxItem { Content: ClickTarget target })
+        {
+            SelectOnly(target);
+            EditSelected();
+        }
+    }
 
+    /// <summary>Opens the editor for the single selected target; a no-op for any other selection size.</summary>
     private void EditSelected()
     {
-        if (TargetListBox.SelectedItem is not ClickTarget target)
+        if (SelectedTargets is not [var target])
             return;
 
         var editor = new TargetEditorWindow(target, _store) { Owner = this };
@@ -225,18 +270,80 @@ public partial class WidgetWindow : Window
 
     private void Delete_Click(object sender, RoutedEventArgs e)
     {
-        if (TargetListBox.SelectedItem is not ClickTarget target)
+        var selected = SelectedTargets;
+        if (selected.Count == 0)
             return;
 
-        if (MessageBox.Show($"Delete target \"{target.Name}\"?", "ClickMap",
-                MessageBoxButton.OKCancel, MessageBoxImage.Warning) == MessageBoxResult.OK)
-            _store.Remove(target.Id);
+        string prompt = selected.Count == 1
+            ? $"Delete target \"{selected[0].Name}\"?"
+            : $"Delete {selected.Count} targets?\n\n" + string.Join("\n", selected.Select(t => $"•  {t.Name}  ({t.Key.Display})"));
+
+        if (MessageBox.Show(prompt, "ClickMap", MessageBoxButton.OKCancel, MessageBoxImage.Warning) == MessageBoxResult.OK)
+            _store.RemoveMany(selected.Select(t => t.Id));
     }
 
-    private void Flash_Click(object sender, RoutedEventArgs e)
+    // ---- Show / hide markers ----------------------------------------------------------
+
+    private sealed record ShownMarker(Window Window, ScreenPoint Point, string Label);
+
+    /// <summary>Persistent on-screen markers, keyed by target id.</summary>
+    private readonly Dictionary<Guid, ShownMarker> _markers = new();
+
+    private bool IsShown(ClickTarget target) => _markers.ContainsKey(target.Id);
+
+    /// <summary>
+    /// Toggles markers for the selection: if any selected target is shown, hides them all;
+    /// otherwise shows them all.
+    /// </summary>
+    private void ShowHide_Click(object sender, RoutedEventArgs e)
     {
-        if (TargetListBox.SelectedItem is ClickTarget target)
-            FlashTarget(target.Target, target.Key.Display, 700);
+        var selected = SelectedTargets;
+        if (selected.Count == 0)
+            return;
+
+        if (selected.Any(IsShown))
+            foreach (var t in selected) HideMarker(t.Id);
+        else
+            foreach (var t in selected) ShowMarker(t);
+
+        UpdateSelectionState();
+    }
+
+    private void ShowMarker(ClickTarget target)
+    {
+        string label = target.Key.Display;
+        if (_markers.TryGetValue(target.Id, out var existing))
+        {
+            if (existing.Point == target.Target && existing.Label == label)
+                return; // already shown and unchanged
+            existing.Window.Close();
+        }
+        _markers[target.Id] = new ShownMarker(ShowMarker(target.Target, label), target.Target, label);
+    }
+
+    private void HideMarker(Guid id)
+    {
+        if (_markers.Remove(id, out var shown))
+            shown.Window.Close();
+    }
+
+    private void HideAllMarkers()
+    {
+        foreach (var id in _markers.Keys.ToList())
+            HideMarker(id);
+    }
+
+    /// <summary>After the store changes: drop markers for deleted targets, redraw moved/rekeyed ones.</summary>
+    private void SyncMarkers()
+    {
+        foreach (var id in _markers.Keys.ToList())
+        {
+            var target = _store.Targets.FirstOrDefault(t => t.Id == id);
+            if (target is null)
+                HideMarker(id);
+            else
+                ShowMarker(target);
+        }
     }
 
     private void WarnIfConflict(ClickTarget target)
@@ -255,10 +362,26 @@ public partial class WidgetWindow : Window
     private const double FlashLabelGapDip = 6;
 
     /// <summary>
-    /// Briefly shows a click-through crosshair marker centered on a point, with the
-    /// target's key beside it, so the user can see where a target clicks and what fires it.
+    /// Briefly shows a target marker (see <see cref="ShowMarker"/>) as click feedback.
     /// </summary>
     public static void FlashTarget(ScreenPoint point, string? label, int milliseconds)
+    {
+        var flash = ShowMarker(point, label);
+        var timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(milliseconds) };
+        timer.Tick += (_, _) =>
+        {
+            timer.Stop();
+            flash.Close();
+        };
+        timer.Start();
+    }
+
+    /// <summary>
+    /// Shows a click-through crosshair marker centered on a point, with the target's key
+    /// beside it, and returns the window so the caller can close it. Used both for the
+    /// persistent Show/Hide markers and, with a timer, for click feedback.
+    /// </summary>
+    public static Window ShowMarker(ScreenPoint point, string? label)
     {
         var accent = Color.FromArgb(255, 61, 165, 255);
         var (content, marker, pill) = BuildFlashContent(accent, label);
@@ -313,14 +436,7 @@ public partial class WidgetWindow : Window
         };
 
         flash.Show();
-
-        var timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(milliseconds) };
-        timer.Tick += (_, _) =>
-        {
-            timer.Stop();
-            flash.Close();
-        };
-        timer.Start();
+        return flash;
     }
 
     // [marker] [gap] [key pill]; the pill is omitted when there is no label. Columns are

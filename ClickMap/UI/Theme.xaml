@@ -221,14 +221,23 @@
                                 Background="{StaticResource B.SurfaceAlt}"
                                 BorderBrush="{StaticResource B.Border}" BorderThickness="1"
                                 VerticalAlignment="Center">
+                            <Grid>
                             <Path x:Name="Check" Width="11" Height="11" Stretch="Uniform"
                                   Data="M 0,5 L 4,9 L 11,0" Stroke="{StaticResource B.OnAccent}"
                                   StrokeThickness="2" StrokeEndLineCap="Round" StrokeStartLineCap="Round"
                                   Visibility="Collapsed" />
+                            <Rectangle x:Name="Dash" Width="9" Height="2" RadiusX="1" RadiusY="1"
+                                       Fill="{StaticResource B.OnAccent}" Visibility="Collapsed" />
+                            </Grid>
                         </Border>
                         <ContentPresenter Margin="9,0,0,0" VerticalAlignment="Center" RecognizesAccessKey="True" />
                     </StackPanel>
                     <ControlTemplate.Triggers>
+                        <Trigger Property="IsChecked" Value="{x:Null}">
+                            <Setter TargetName="Box" Property="Background" Value="{StaticResource B.Accent}" />
+                            <Setter TargetName="Box" Property="BorderBrush" Value="{StaticResource B.Accent}" />
+                            <Setter TargetName="Dash" Property="Visibility" Value="Visible" />
+                        </Trigger>
                         <Trigger Property="IsChecked" Value="True">
                             <Setter TargetName="Box" Property="Background" Value="{StaticResource B.Accent}" />
                             <Setter TargetName="Box" Property="BorderBrush" Value="{StaticResource B.Accent}" />

@@ -20,7 +20,7 @@ Built with **.NET 10 + WPF (C#)**. Low footprint, single-process, no external se
 - **System tray** menu: show/hide, pause, add target, settings, exit.
 - **Pause** dispatch any time, plus a global **panic key** (default `Ctrl+Alt+P`).
 - **Conflict detection** when a key is assigned to more than one target.
-- **Flash preview** shows where a target clicks and which key fires it; optional visual/sound **click feedback**.
+- **Show / Hide** on-screen markers for any targets, labelled with their keys; optional visual/sound **click feedback**.
 - **Launch at Windows startup** (optional).
 - Robust: single-instance, atomic config saves, corrupt-file recovery, file logging.
 
@@ -64,9 +64,12 @@ installed, set `SelfContained=false` in
 2. **Trigger it** — press that key anywhere; a click fires at that exact spot.
 3. **Edit / delete** — select a target and click **Edit** (or double-click it) to rename,
    reassign the key, **re-pick** the point, change the click type, enable/disable, or delete.
-4. **Flash** — briefly marks the selected target on screen, labelled with its key, so you can
-   see where it clicks. The same marker appears on each click when visual feedback is on.
-5. **Pause** — the toggle (or panic key) stops all dispatch instantly.
+4. **Show / Hide** — toggles a persistent on-screen marker (crosshair + key) for the selected
+   targets so you can see exactly where they click. Markers follow edits and vanish on delete.
+   A brief version of the same marker appears on each click when visual feedback is on.
+5. **Multi-select** — Ctrl/Shift-click rows, tick **All**, or press `Ctrl+A`. **Show / Hide** and
+   **Delete** act on every selected target; **Edit** needs exactly one.
+6. **Pause** — the toggle (or panic key) stops all dispatch instantly.
 
 Targets, settings, and logs are stored under `%APPDATA%\ClickMap\`:
 

@@ -50,13 +50,17 @@
                 <ToggleButton x:Name="PauseToggle" Style="{StaticResource Toggle.Pause}"
                               HorizontalAlignment="Left" Click="PauseToggle_Click"
                               ToolTip="Pause or resume all clicking" />
-                <TextBlock x:Name="CountText" Style="{StaticResource T.Caption}"
-                           HorizontalAlignment="Right" VerticalAlignment="Center" />
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                    <CheckBox x:Name="SelectAllCheck" Content="All" FontSize="12" Margin="0,0,12,0"
+                              Visibility="Collapsed" Click="SelectAll_Click"
+                              ToolTip="Select all targets (Ctrl+A)" />
+                    <TextBlock x:Name="CountText" Style="{StaticResource T.Caption}" VerticalAlignment="Center" />
+                </StackPanel>
             </Grid>
 
             <!-- Target list + empty state -->
             <Grid Grid.Row="2">
-                <ListBox x:Name="TargetListBox" Style="{StaticResource ListBox.Targets}"
+                <ListBox x:Name="TargetListBox" Style="{StaticResource ListBox.Targets}" SelectionMode="Extended"
                          SelectionChanged="TargetListBox_SelectionChanged"
                          MouseDoubleClick="TargetListBox_MouseDoubleClick">
                     <ListBox.ItemTemplate>
@@ -123,13 +127,13 @@
                     </Grid.ColumnDefinitions>
                     <Button x:Name="EditButton" Grid.Column="0" Style="{StaticResource Btn.Subtle}"
                             Margin="0,0,4,0" Click="Edit_Click" Content="Edit"
-                            ToolTip="Edit the selected target (Enter / F2)" />
-                    <Button x:Name="FlashButton" Grid.Column="1" Style="{StaticResource Btn.Subtle}"
-                            Margin="4,0" Click="Flash_Click" Content="Flash"
-                            ToolTip="Briefly show where the selected target clicks" />
+                            ToolTip="Edit the selected target (Enter / F2) — one at a time" />
+                    <Button x:Name="ShowHideButton" Grid.Column="1" Style="{StaticResource Btn.Subtle}"
+                            Margin="4,0" Click="ShowHide_Click" Content="Show"
+                            ToolTip="Show or hide the selected targets on screen" />
                     <Button x:Name="DeleteButton" Grid.Column="2" Style="{StaticResource Btn.Danger}"
                             Margin="4,0,0,0" Click="Delete_Click" Content="Delete"
-                            ToolTip="Delete the selected target (Del)" />
+                            ToolTip="Delete the selected targets (Del)" />
                 </Grid>
             </StackPanel>
         </Grid>

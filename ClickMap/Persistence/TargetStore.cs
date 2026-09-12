@@ -102,6 +102,15 @@ public sealed class TargetStore
         return true;
     }
 
+    /// <summary>Removes every target whose id is listed, with a single save and notification.</summary>
+    public int RemoveMany(IEnumerable<Guid> ids)
+    {
+        var set = ids.ToHashSet();
+        int removed = _targets.RemoveAll(t => set.Contains(t.Id));
+        if (removed > 0) SaveAndNotify();
+        return removed;
+    }
+
     /// <summary>
     /// Call after mutating a target obtained from <see cref="Targets"/> to persist the
     /// change, rebuild the key index, and notify listeners.
