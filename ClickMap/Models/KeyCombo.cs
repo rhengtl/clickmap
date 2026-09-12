@@ -14,7 +14,7 @@ public enum KeyModifiers
 
 /// <summary>
 /// A keyboard trigger: a virtual-key code plus the modifiers that must be held. Acts as
-/// the dictionary key the hook uses to find the region to click, so it is an immutable
+/// the dictionary key the hook uses to find the target to click, so it is an immutable
 /// value type with value equality.
 /// </summary>
 public readonly record struct KeyCombo(ushort Vk, KeyModifiers Modifiers = KeyModifiers.None)

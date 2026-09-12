@@ -5,8 +5,8 @@ namespace ClickMap.Services;
 
 /// <summary>
 /// Connects the three pieces of the runtime: a global key-down from
-/// <see cref="HotkeyService"/> is matched against a <see cref="RegionStore"/> and, on a
-/// hit, a click is dispatched at the region's center via <see cref="ClickService"/>.
+/// <see cref="HotkeyService"/> is matched against a <see cref="TargetStore"/> and, on a
+/// hit, a click is dispatched at the target's point via <see cref="ClickService"/>.
 /// <para>
 /// The match runs on the hook thread and is O(1); the click itself is offloaded so the
 /// keyboard hook never blocks.
@@ -15,11 +15,11 @@ namespace ClickMap.Services;
 public sealed class ClickEngine : IDisposable
 {
     private readonly HotkeyService _hotkeys;
-    private readonly RegionStore _store;
+    private readonly TargetStore _store;
     private readonly ClickService _click;
     private bool _paused;
 
-    public ClickEngine(HotkeyService hotkeys, RegionStore store, ClickService click)
+    public ClickEngine(HotkeyService hotkeys, TargetStore store, ClickService click)
     {
         _hotkeys = hotkeys;
         _store = store;
@@ -45,8 +45,8 @@ public sealed class ClickEngine : IDisposable
     /// <summary>Raised whenever <see cref="IsPaused"/> changes (including via the panic key).</summary>
     public event EventHandler<bool>? PauseChanged;
 
-    /// <summary>Raised after a click is dispatched for a region (for UI feedback/logging).</summary>
-    public event EventHandler<Region>? RegionClicked;
+    /// <summary>Raised after a click is dispatched for a target (for UI feedback/logging).</summary>
+    public event EventHandler<ClickTarget>? TargetClicked;
 
     private void OnHotkeyPressed(object? sender, HotkeyPressedEventArgs e)
     {
@@ -62,26 +62,26 @@ public sealed class ClickEngine : IDisposable
         if (_paused)
             return;
 
-        if (!_store.TryGetByKey(e.Combo, out var region) || region is null)
+        if (!_store.TryGetByKey(e.Combo, out var target) || target is null)
             return;
 
         e.Suppress = true; // the key is "ours" — don't pass it to the focused app
 
-        int x = region.Bounds.CenterX;
-        int y = region.Bounds.CenterY;
-        var clickType = region.ClickType;
+        int x = target.Target.X;
+        int y = target.Target.Y;
+        var clickType = target.ClickType;
 
         Task.Run(() =>
         {
             try
             {
                 _click.ClickAt(x, y, clickType);
-                RegionClicked?.Invoke(this, region);
+                TargetClicked?.Invoke(this, target);
             }
             catch (Exception ex)
             {
                 // A single failed SendInput must not tear down the engine.
-                Log.Error($"Click dispatch failed for region '{region.Name}'", ex);
+                Log.Error($"Click dispatch failed for target '{target.Name}'", ex);
             }
         });
     }

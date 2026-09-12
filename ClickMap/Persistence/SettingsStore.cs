@@ -7,7 +7,7 @@ namespace ClickMap.Persistence;
 
 /// <summary>
 /// Loads and saves <see cref="AppSettings"/> to <c>%APPDATA%\ClickMap\settings.json</c>
-/// using the same atomic-write / fail-soft approach as <see cref="RegionStore"/>.
+/// using the same atomic-write / fail-soft approach as <see cref="TargetStore"/>.
 /// </summary>
 public sealed class SettingsStore
 {

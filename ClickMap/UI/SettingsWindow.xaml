@@ -33,7 +33,7 @@
 
             <!-- Clicking -->
             <TextBlock Text="CLICKING" Style="{StaticResource T.SectionHeader}" Margin="0,18,0,8" />
-            <TextBlock Text="Default click type for new regions" Margin="0,0,0,5" />
+            <TextBlock Text="Default click type for new targets" Margin="0,0,0,5" />
             <ComboBox x:Name="ClickTypeBox" Margin="0,0,0,12" />
             <CheckBox x:Name="MoveCursorCheck" Content="Move cursor to target before clicking" />
             <TextBlock Text="When off, sends an absolute click without moving the cursor."
@@ -41,7 +41,7 @@
 
             <!-- Feedback -->
             <TextBlock Text="FEEDBACK" Style="{StaticResource T.SectionHeader}" Margin="0,18,0,8" />
-            <CheckBox x:Name="VisualFeedbackCheck" Content="Flash the region when a click fires" Margin="0,0,0,10" />
+            <CheckBox x:Name="VisualFeedbackCheck" Content="Mark the point when a click fires" Margin="0,0,0,10" />
             <CheckBox x:Name="SoundFeedbackCheck" Content="Play a sound when a click fires" />
 
             <!-- Panic key -->

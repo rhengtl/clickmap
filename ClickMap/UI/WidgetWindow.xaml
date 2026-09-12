@@ -54,11 +54,11 @@
                            HorizontalAlignment="Right" VerticalAlignment="Center" />
             </Grid>
 
-            <!-- Region list + empty state -->
+            <!-- Target list + empty state -->
             <Grid Grid.Row="2">
-                <ListBox x:Name="RegionListBox" Style="{StaticResource ListBox.Regions}"
-                         SelectionChanged="RegionListBox_SelectionChanged"
-                         MouseDoubleClick="RegionListBox_MouseDoubleClick">
+                <ListBox x:Name="TargetListBox" Style="{StaticResource ListBox.Targets}"
+                         SelectionChanged="TargetListBox_SelectionChanged"
+                         MouseDoubleClick="TargetListBox_MouseDoubleClick">
                     <ListBox.ItemTemplate>
                         <DataTemplate>
                             <Grid x:Name="Row">
@@ -77,7 +77,9 @@
                                 <StackPanel Grid.Column="1" VerticalAlignment="Center">
                                     <TextBlock Text="{Binding Name}" FontWeight="SemiBold" FontSize="13"
                                                TextTrimming="CharacterEllipsis" />
-                                    <TextBlock Text="{Binding ClickType}" Style="{StaticResource T.Caption}" />
+                                    <TextBlock Style="{StaticResource T.Caption}">
+                                        <Run Text="{Binding ClickType, Mode=OneWay}" /><Run Text="  ·  " /><Run Text="{Binding Target, Mode=OneWay}" />
+                                    </TextBlock>
                                 </StackPanel>
 
                                 <Border x:Name="OffPill" Grid.Column="2" Background="{StaticResource B.SurfaceAlt}"
@@ -101,10 +103,10 @@
                             Margin="20" Visibility="Collapsed">
                     <Image Source="/ClickMap.png" Width="56" Height="56" Opacity="0.5"
                            HorizontalAlignment="Center" RenderOptions.BitmapScalingMode="HighQuality" />
-                    <TextBlock Text="No regions yet" FontWeight="SemiBold" FontSize="14"
+                    <TextBlock Text="No targets yet" FontWeight="SemiBold" FontSize="14"
                                HorizontalAlignment="Center" Margin="0,12,0,4" />
                     <TextBlock Style="{StaticResource T.Caption}" TextAlignment="Center" TextWrapping="Wrap"
-                               Text="Add a region, drag a box on screen, then press the key to assign." />
+                               Text="Add a target, click a spot on screen, then press the key to assign." />
                 </StackPanel>
             </Grid>
 
@@ -112,7 +114,7 @@
             <StackPanel Grid.Row="3" Margin="0,12,0,0">
                 <Button x:Name="AddButton" Style="{StaticResource Btn.Primary}" Click="Add_Click"
                         HorizontalAlignment="Stretch" Padding="12,9"
-                        Content="＋  Add region" />
+                        Content="＋  Add target" />
                 <Grid Margin="0,8,0,0">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />
@@ -121,13 +123,13 @@
                     </Grid.ColumnDefinitions>
                     <Button x:Name="EditButton" Grid.Column="0" Style="{StaticResource Btn.Subtle}"
                             Margin="0,0,4,0" Click="Edit_Click" Content="Edit"
-                            ToolTip="Edit the selected region (Enter / F2)" />
+                            ToolTip="Edit the selected target (Enter / F2)" />
                     <Button x:Name="FlashButton" Grid.Column="1" Style="{StaticResource Btn.Subtle}"
                             Margin="4,0" Click="Flash_Click" Content="Flash"
-                            ToolTip="Briefly highlight the selected region on screen" />
+                            ToolTip="Briefly show where the selected target clicks" />
                     <Button x:Name="DeleteButton" Grid.Column="2" Style="{StaticResource Btn.Danger}"
                             Margin="4,0,0,0" Click="Delete_Click" Content="Delete"
-                            ToolTip="Delete the selected region (Del)" />
+                            ToolTip="Delete the selected target (Del)" />
                 </Grid>
             </StackPanel>
         </Grid>

@@ -5,7 +5,7 @@
     <!-- ============================================================= -->
     <!--  ClickMap design system                                        -->
     <!--  Palette derived from the app icon: dark charcoal base, blue    -->
-    <!--  chrome/cursor accent, orange region-selection accent.          -->
+    <!--  chrome/cursor accent, orange target-picker accent.          -->
     <!-- ============================================================= -->
 
     <!-- Colors -->
@@ -369,8 +369,8 @@
         </Setter>
     </Style>
 
-    <!-- ===================== Region list ========================== -->
-    <Style x:Key="ListBox.Regions" TargetType="ListBox">
+    <!-- ===================== Target list ========================== -->
+    <Style x:Key="ListBox.Targets" TargetType="ListBox">
         <Setter Property="Background" Value="Transparent" />
         <Setter Property="BorderThickness" Value="0" />
         <Setter Property="Foreground" Value="{StaticResource B.Text}" />

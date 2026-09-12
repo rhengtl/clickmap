@@ -12,18 +12,18 @@
     <AssemblyName>ClickMap</AssemblyName>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>ClickMap.ico</ApplicationIcon>
-    <Version>1.0.0</Version>
-    <AssemblyVersion>1.0.0.0</AssemblyVersion>
-    <FileVersion>1.0.0.0</FileVersion>
+    <Version>1.1.0</Version>
+    <AssemblyVersion>1.1.0.0</AssemblyVersion>
+    <FileVersion>1.1.0.0</FileVersion>
     <Product>ClickMap</Product>
-    <Description>Map keyboard keys to mouse clicks at saved screen regions.</Description>
+    <Description>Map keyboard keys to mouse clicks at saved screen points.</Description>
     <!-- WFO0003: WinForms analyzer wants DPI configured via SetHighDpiMode, but this is a
          WPF-first app where the manifest is the correct place to declare DPI awareness. -->
     <NoWarn>$(NoWarn);WFO0003</NoWarn>
   </PropertyGroup>
 
   <!-- WinForms enables implicit System.Windows.Forms/System.Drawing usings that collide
-       with WPF types (Region, Point, Application, KeyEventArgs…). Only TrayIcon needs
+       with WPF types (Point, Application, KeyEventArgs…). Only TrayIcon needs
        them, and it imports them explicitly, so remove them from the global set. -->
   <ItemGroup>
     <Using Remove="System.Windows.Forms" />

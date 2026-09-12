@@ -5,7 +5,7 @@ namespace ClickMap.UI;
 
 /// <summary>
 /// Helpers to turn a WPF key event into the app's <see cref="KeyCombo"/> for assigning a
-/// key to a region in the overlay and editor.
+/// key to a target in the overlay and editor.
 /// </summary>
 public static class InputCapture
 {

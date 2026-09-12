@@ -1,7 +1,7 @@
-<Window x:Class="ClickMap.UI.RegionEditorWindow"
+<Window x:Class="ClickMap.UI.TargetEditorWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Edit region" SizeToContent="Height" Width="372"
+        Title="Edit target" SizeToContent="Height" Width="372"
         WindowStartupLocation="CenterOwner" ResizeMode="NoResize" ShowInTaskbar="False"
         WindowStyle="None" AllowsTransparency="True" Background="Transparent"
         FontFamily="{StaticResource Font.Ui}" TextOptions.TextFormattingMode="Ideal">
@@ -21,7 +21,7 @@
             <!-- Title bar -->
             <Grid Grid.Row="0" Background="Transparent" Margin="0,0,0,16"
                   MouseLeftButtonDown="Header_MouseLeftButtonDown">
-                <TextBlock Text="Edit region" FontSize="15" FontWeight="SemiBold" VerticalAlignment="Center" />
+                <TextBlock Text="Edit target" FontSize="15" FontWeight="SemiBold" VerticalAlignment="Center" />
                 <Button Style="{StaticResource Btn.Icon}" HorizontalAlignment="Right" Click="Close_Click" ToolTip="Close">
                     <Path Width="11" Height="11" Stretch="Uniform" Stroke="{StaticResource B.TextMuted}"
                           StrokeThickness="1.6" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
@@ -41,6 +41,7 @@
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
                 </Grid.RowDefinitions>
 
                 <TextBlock Grid.Row="0" Grid.Column="0" Text="Name" Foreground="{StaticResource B.TextMuted}"
@@ -53,13 +54,27 @@
                         Margin="0,0,0,10" Padding="10,8" HorizontalAlignment="Stretch"
                         Click="KeyButton_Click" Content="(press to set)" />
 
-                <TextBlock Grid.Row="2" Grid.Column="0" Text="Click" Foreground="{StaticResource B.TextMuted}"
+                <TextBlock Grid.Row="2" Grid.Column="0" Text="Point" Foreground="{StaticResource B.TextMuted}"
                            VerticalAlignment="Center" Margin="0,0,12,10" />
-                <ComboBox Grid.Row="2" Grid.Column="1" x:Name="ClickTypeBox" Margin="0,0,0,10" />
+                <Grid Grid.Row="2" Grid.Column="1" Margin="0,0,0,10">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Grid.Column="0" x:Name="PointText" VerticalAlignment="Center"
+                               FontFamily="Consolas" FontSize="13" />
+                    <Button Grid.Column="1" x:Name="PickButton" Style="{StaticResource Btn.Subtle}"
+                            Padding="10,6" Click="PickButton_Click" Content="Re-pick…"
+                            ToolTip="Choose a new point on screen" />
+                </Grid>
 
-                <CheckBox Grid.Row="3" Grid.Column="1" x:Name="EnabledCheck" Content="Enabled" Margin="0,4,0,4" />
+                <TextBlock Grid.Row="3" Grid.Column="0" Text="Click" Foreground="{StaticResource B.TextMuted}"
+                           VerticalAlignment="Center" Margin="0,0,12,10" />
+                <ComboBox Grid.Row="3" Grid.Column="1" x:Name="ClickTypeBox" Margin="0,0,0,10" />
 
-                <TextBlock Grid.Row="4" Grid.Column="0" Grid.ColumnSpan="2" x:Name="ConflictWarning"
+                <CheckBox Grid.Row="4" Grid.Column="1" x:Name="EnabledCheck" Content="Enabled" Margin="0,4,0,4" />
+
+                <TextBlock Grid.Row="5" Grid.Column="0" Grid.ColumnSpan="2" x:Name="ConflictWarning"
                            Foreground="{StaticResource B.Orange}" TextWrapping="Wrap"
                            Visibility="Collapsed" Margin="0,10,0,0" />
             </Grid>

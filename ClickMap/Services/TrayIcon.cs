@@ -6,7 +6,7 @@ namespace ClickMap.Services;
 
 /// <summary>
 /// Owns the system-tray icon and its menu. Left-/double-click toggles the widget;
-/// the context menu offers show/hide, pause, add region, and exit.
+/// the context menu offers show/hide, pause, add target, and exit.
 /// </summary>
 public sealed class TrayIcon : IDisposable
 {
@@ -27,10 +27,10 @@ public sealed class TrayIcon : IDisposable
         menu.Items.Add(pauseItem);
 
         menu.Items.Add(new WinForms.ToolStripSeparator());
-        menu.Items.Add("Add region…", null, (_, _) =>
+        menu.Items.Add("Add target…", null, (_, _) =>
         {
             _widget.ShowFromTray();
-            _widget.AddRegion();
+            _widget.AddTarget();
         });
         menu.Items.Add("Settings…", null, (_, _) => _widget.OpenSettings());
         menu.Items.Add(new WinForms.ToolStripSeparator());

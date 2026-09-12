@@ -6,42 +6,46 @@ using ClickMap.Persistence;
 namespace ClickMap.UI;
 
 /// <summary>
-/// Modal editor for a single region: rename, reassign the key, change the click type,
-/// toggle enabled, or delete. Applies changes to the passed <see cref="Region"/> on OK.
+/// Modal editor for a single click target: rename, reassign the key, re-pick the point,
+/// change the click type, toggle enabled, or delete. Applies changes to the passed
+/// <see cref="ClickTarget"/> on OK.
 /// </summary>
-public partial class RegionEditorWindow : Window
+public partial class TargetEditorWindow : Window
 {
-    private readonly Region _region;
-    private readonly RegionStore? _store;
+    private readonly ClickTarget _target;
+    private readonly TargetStore? _store;
     private KeyCombo _key;
+    private ScreenPoint _point;
     private bool _capturingKey;
 
-    /// <summary>True when the user chose to delete the region (DialogResult is also true).</summary>
+    /// <summary>True when the user chose to delete the target (DialogResult is also true).</summary>
     public bool Deleted { get; private set; }
 
-    public RegionEditorWindow(Region region, RegionStore? store = null)
+    public TargetEditorWindow(ClickTarget target, TargetStore? store = null)
     {
         InitializeComponent();
-        _region = region;
+        _target = target;
         _store = store;
-        _key = region.Key;
+        _key = target.Key;
+        _point = target.Target;
 
-        NameBox.Text = region.Name;
+        NameBox.Text = target.Name;
         ClickTypeBox.ItemsSource = Enum.GetValues<ClickType>();
-        ClickTypeBox.SelectedItem = region.ClickType;
-        EnabledCheck.IsChecked = region.Enabled;
+        ClickTypeBox.SelectedItem = target.ClickType;
+        EnabledCheck.IsChecked = target.Enabled;
         KeyButton.Content = _key.Display;
+        PointText.Text = _point.ToString();
         UpdateConflictWarning();
     }
 
-    /// <summary>Shows a warning when another region already uses the chosen key.</summary>
+    /// <summary>Shows a warning when another target already uses the chosen key.</summary>
     private void UpdateConflictWarning()
     {
         bool conflict = _store is not null
-            && _store.Regions.Any(r => r.Id != _region.Id && r.Key == _key);
+            && _store.Targets.Any(t => t.Id != _target.Id && t.Key == _key);
 
         ConflictWarning.Text = conflict
-            ? $"Another region already uses {_key.Display}. Only one will fire."
+            ? $"Another target already uses {_key.Display}. Only one will fire."
             : string.Empty;
         ConflictWarning.Visibility = conflict ? Visibility.Visible : Visibility.Collapsed;
     }
@@ -51,6 +55,18 @@ public partial class RegionEditorWindow : Window
         _capturingKey = true;
         KeyButton.Content = "press a key…";
         KeyButton.Focus();
+    }
+
+    private void PickButton_Click(object sender, RoutedEventArgs e)
+    {
+        _capturingKey = false;
+        KeyButton.Content = _key.Display;
+
+        if (TargetOverlay.Capture(this, askForKey: false) is { } picked)
+        {
+            _point = picked.Target;
+            PointText.Text = _point.ToString();
+        }
     }
 
     protected override void OnPreviewKeyDown(KeyEventArgs e)
@@ -78,16 +94,17 @@ public partial class RegionEditorWindow : Window
 
     private void Ok_Click(object sender, RoutedEventArgs e)
     {
-        _region.Name = string.IsNullOrWhiteSpace(NameBox.Text) ? "Region" : NameBox.Text.Trim();
-        _region.Key = _key;
-        _region.ClickType = (ClickType)(ClickTypeBox.SelectedItem ?? ClickType.LeftClick);
-        _region.Enabled = EnabledCheck.IsChecked == true;
+        _target.Name = string.IsNullOrWhiteSpace(NameBox.Text) ? "Target" : NameBox.Text.Trim();
+        _target.Key = _key;
+        _target.Target = _point;
+        _target.ClickType = (ClickType)(ClickTypeBox.SelectedItem ?? ClickType.LeftClick);
+        _target.Enabled = EnabledCheck.IsChecked == true;
         DialogResult = true;
     }
 
     private void DeleteButton_Click(object sender, RoutedEventArgs e)
     {
-        if (MessageBox.Show($"Delete region \"{_region.Name}\"?", "ClickMap",
+        if (MessageBox.Show($"Delete target \"{_target.Name}\"?", "ClickMap",
                 MessageBoxButton.OKCancel, MessageBoxImage.Warning) != MessageBoxResult.OK)
             return;
 

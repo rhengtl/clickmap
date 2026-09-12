@@ -146,6 +146,10 @@ internal static class NativeMethods
     [DllImport("user32.dll")]
     public static extern int GetSystemMetrics(int nIndex);
 
+    /// <summary>DPI of the monitor the window is on (Windows 10 1607+). 96 = 100 %.</summary>
+    [DllImport("user32.dll")]
+    public static extern uint GetDpiForWindow(IntPtr hWnd);
+
     [DllImport("user32.dll")]
     public static extern short GetAsyncKeyState(int vKey);
 
@@ -169,6 +173,7 @@ internal static class NativeMethods
         IntPtr hWnd, IntPtr hWndInsertAfter, int X, int Y, int cx, int cy, uint uFlags);
 
     public static readonly IntPtr HWND_TOPMOST = new(-1);
+    public const uint SWP_NOSIZE = 0x0001;
     public const uint SWP_NOACTIVATE = 0x0010;
     public const uint SWP_SHOWWINDOW = 0x0040;
 

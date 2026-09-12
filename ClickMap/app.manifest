@@ -4,7 +4,7 @@
 
   <!-- Per-Monitor-V2 DPI awareness: screen coordinates we store/read match physical
        pixels on mixed-DPI multi-monitor setups, which keeps SendInput absolute mapping
-       and region rectangles correct. -->
+       and click points correct. -->
   <application xmlns="urn:schemas-microsoft-com:asm.v3">
     <windowsSettings>
       <dpiAwareness xmlns="http://schemas.microsoft.com/SMI/2016/WindowsSettings">PerMonitorV2</dpiAwareness>

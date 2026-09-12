@@ -1,7 +1,7 @@
 namespace ClickMap.Models;
 
 /// <summary>
-/// User/session settings persisted alongside the regions.
+/// User/session settings persisted alongside the click targets.
 /// </summary>
 public sealed class AppSettings
 {
@@ -15,7 +15,7 @@ public sealed class AppSettings
     /// <summary>Launch ClickMap when Windows starts (HKCU Run key).</summary>
     public bool StartWithWindows { get; set; }
 
-    /// <summary>Click type applied to newly created regions.</summary>
+    /// <summary>Click type applied to newly created targets.</summary>
     public ClickType DefaultClickType { get; set; } = ClickType.LeftClick;
 
     /// <summary>
@@ -24,7 +24,7 @@ public sealed class AppSettings
     /// </summary>
     public bool MoveCursorToTarget { get; set; } = true;
 
-    /// <summary>Briefly highlight the region when a click fires.</summary>
+    /// <summary>Briefly mark the target point when a click fires.</summary>
     public bool VisualFeedback { get; set; } = true;
 
     /// <summary>Play a short sound when a click fires.</summary>

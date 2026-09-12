@@ -2,6 +2,8 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Interop;
+using System.Windows.Media;
+using System.Windows.Shapes;
 using System.Windows.Threading;
 using ClickMap.Models;
 using ClickMap.Persistence;
@@ -11,20 +13,20 @@ using static ClickMap.Interop.NativeMethods;
 namespace ClickMap.UI;
 
 /// <summary>
-/// The always-on-top floating widget: lists regions, toggles pause, and drives the
+/// The always-on-top floating widget: lists click targets, toggles pause, and drives the
 /// create/edit/delete/flash loop. Closing hides to tray; <see cref="ForceClose"/> really
 /// exits.
 /// </summary>
 public partial class WidgetWindow : Window
 {
-    private readonly RegionStore _store;
+    private readonly TargetStore _store;
     private readonly ClickEngine _engine;
     private readonly ClickService _click;
     private readonly AppSettings _settings;
     private readonly SettingsStore _settingsStore;
     private bool _forceClose;
 
-    public WidgetWindow(RegionStore store, ClickEngine engine, ClickService click,
+    public WidgetWindow(TargetStore store, ClickEngine engine, ClickService click,
         AppSettings settings, SettingsStore settingsStore)
     {
         InitializeComponent();
@@ -37,7 +39,7 @@ public partial class WidgetWindow : Window
         PauseToggle.IsChecked = _engine.IsPaused;
         _store.Changed += (_, _) => Dispatcher.Invoke(RefreshList);
         _engine.PauseChanged += (_, paused) => Dispatcher.Invoke(() => OnPauseChanged(paused));
-        _engine.RegionClicked += (_, region) => Dispatcher.BeginInvoke(() => OnRegionClicked(region));
+        _engine.TargetClicked += (_, target) => Dispatcher.BeginInvoke(() => OnTargetClicked(target));
 
         Loaded += OnLoaded;
         LocationChanged += (_, _) => CapturePosition();
@@ -67,25 +69,25 @@ public partial class WidgetWindow : Window
 
     private void RefreshList()
     {
-        Guid? selectedId = (RegionListBox.SelectedItem as Region)?.Id;
-        var regions = _store.Regions.ToList();
-        RegionListBox.ItemsSource = regions;
+        Guid? selectedId = (TargetListBox.SelectedItem as ClickTarget)?.Id;
+        var targets = _store.Targets.ToList();
+        TargetListBox.ItemsSource = targets;
         if (selectedId is Guid id)
-            RegionListBox.SelectedItem = regions.FirstOrDefault(r => r.Id == id);
+            TargetListBox.SelectedItem = targets.FirstOrDefault(t => t.Id == id);
 
-        EmptyState.Visibility = regions.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
-        CountText.Text = regions.Count == 0
+        EmptyState.Visibility = targets.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+        CountText.Text = targets.Count == 0
             ? string.Empty
-            : $"{regions.Count} region{(regions.Count == 1 ? "" : "s")}";
+            : $"{targets.Count} target{(targets.Count == 1 ? "" : "s")}";
         UpdateActionButtons();
     }
 
-    private void RegionListBox_SelectionChanged(object sender, SelectionChangedEventArgs e) =>
+    private void TargetListBox_SelectionChanged(object sender, SelectionChangedEventArgs e) =>
         UpdateActionButtons();
 
     private void UpdateActionButtons()
     {
-        bool hasSelection = RegionListBox.SelectedItem is Region;
+        bool hasSelection = TargetListBox.SelectedItem is ClickTarget;
         EditButton.IsEnabled = hasSelection;
         FlashButton.IsEnabled = hasSelection;
         DeleteButton.IsEnabled = hasSelection;
@@ -93,7 +95,7 @@ public partial class WidgetWindow : Window
 
     private void Window_KeyDown(object sender, KeyEventArgs e)
     {
-        if (RegionListBox.SelectedItem is not Region)
+        if (TargetListBox.SelectedItem is not ClickTarget)
             return;
 
         if (e.Key == Key.Delete)
@@ -169,104 +171,114 @@ public partial class WidgetWindow : Window
 
     // ---- Click feedback ---------------------------------------------------------------
 
-    private void OnRegionClicked(Region region)
+    private void OnTargetClicked(ClickTarget target)
     {
         if (_settings.VisualFeedback)
-            FlashRegion(region.Bounds, 180);
+            FlashTarget(target.Target, target.Key.Display, 180);
         if (_settings.SoundFeedback)
             System.Media.SystemSounds.Asterisk.Play();
     }
 
-    // ---- Region actions ---------------------------------------------------------------
+    // ---- Target actions ---------------------------------------------------------------
 
-    public void AddRegion()
+    public void AddTarget()
     {
-        var result = RegionOverlay.Capture(IsVisible ? this : null);
-        if (result is not { } draft)
+        var result = TargetOverlay.Capture(IsVisible ? this : null);
+        if (result is not { Key: { } key } draft)
             return;
 
-        var region = new Region
+        var target = new ClickTarget
         {
-            Name = $"Region {_store.Regions.Count + 1}",
-            Bounds = draft.Bounds,
-            Key = draft.Key,
+            Name = $"Target {_store.Targets.Count + 1}",
+            Target = draft.Target,
+            Key = key,
             ClickType = _settings.DefaultClickType,
         };
-        _store.Add(region);
-        RegionListBox.SelectedItem = _store.Regions.FirstOrDefault(r => r.Id == region.Id);
-        WarnIfConflict(region);
+        _store.Add(target);
+        TargetListBox.SelectedItem = _store.Targets.FirstOrDefault(t => t.Id == target.Id);
+        WarnIfConflict(target);
     }
 
-    private void Add_Click(object sender, RoutedEventArgs e) => AddRegion();
+    private void Add_Click(object sender, RoutedEventArgs e) => AddTarget();
 
     private void Edit_Click(object sender, RoutedEventArgs e) => EditSelected();
 
-    private void RegionListBox_MouseDoubleClick(object sender, MouseButtonEventArgs e) => EditSelected();
+    private void TargetListBox_MouseDoubleClick(object sender, MouseButtonEventArgs e) => EditSelected();
 
     private void EditSelected()
     {
-        if (RegionListBox.SelectedItem is not Region region)
+        if (TargetListBox.SelectedItem is not ClickTarget target)
             return;
 
-        var editor = new RegionEditorWindow(region, _store) { Owner = this };
+        var editor = new TargetEditorWindow(target, _store) { Owner = this };
         if (editor.ShowDialog() != true)
             return;
 
         if (editor.Deleted)
-            _store.Remove(region.Id);
+            _store.Remove(target.Id);
         else
         {
             _store.Update();
-            WarnIfConflict(region);
+            WarnIfConflict(target);
         }
     }
 
     private void Delete_Click(object sender, RoutedEventArgs e)
     {
-        if (RegionListBox.SelectedItem is not Region region)
+        if (TargetListBox.SelectedItem is not ClickTarget target)
             return;
 
-        if (MessageBox.Show($"Delete region \"{region.Name}\"?", "ClickMap",
+        if (MessageBox.Show($"Delete target \"{target.Name}\"?", "ClickMap",
                 MessageBoxButton.OKCancel, MessageBoxImage.Warning) == MessageBoxResult.OK)
-            _store.Remove(region.Id);
+            _store.Remove(target.Id);
     }
 
     private void Flash_Click(object sender, RoutedEventArgs e)
     {
-        if (RegionListBox.SelectedItem is Region region)
-            FlashRegion(region.Bounds, 700);
+        if (TargetListBox.SelectedItem is ClickTarget target)
+            FlashTarget(target.Target, target.Key.Display, 700);
     }
 
-    private void WarnIfConflict(Region region)
+    private void WarnIfConflict(ClickTarget target)
     {
-        if (_store.DuplicateKeys().Contains(region.Key))
+        if (_store.DuplicateKeys().Contains(target.Key))
             MessageBox.Show(
-                $"The key {region.Key.Display} is now assigned to more than one region. " +
+                $"The key {target.Key.Display} is now assigned to more than one target. " +
                 "Only the first will fire — give them distinct keys.",
                 "ClickMap — key conflict", MessageBoxButton.OK, MessageBoxImage.Warning);
     }
 
-    /// <summary>Briefly highlights a region on screen (click-through) so the user can locate it.</summary>
-    public static void FlashRegion(ScreenRect bounds, int milliseconds)
+    /// <summary>Size of the flash marker in DIPs; the target point sits at its center.</summary>
+    private const double FlashMarkerDip = 44;
+
+    /// <summary>Gap between the marker and its key label, in DIPs.</summary>
+    private const double FlashLabelGapDip = 6;
+
+    /// <summary>
+    /// Briefly shows a click-through crosshair marker centered on a point, with the
+    /// target's key beside it, so the user can see where a target clicks and what fires it.
+    /// </summary>
+    public static void FlashTarget(ScreenPoint point, string? label, int milliseconds)
     {
+        var accent = Color.FromArgb(255, 61, 165, 255);
+        var (content, marker, pill) = BuildFlashContent(accent, label);
         var flash = new Window
         {
             WindowStyle = WindowStyle.None,
             AllowsTransparency = true,
-            Background = System.Windows.Media.Brushes.Transparent,
+            Background = Brushes.Transparent,
             ShowInTaskbar = false,
             Topmost = true,
             ResizeMode = ResizeMode.NoResize,
             IsHitTestVisible = false,
             Focusable = false,
-            Content = new System.Windows.Controls.Border
-            {
-                BorderBrush = System.Windows.Media.Brushes.DeepSkyBlue,
-                BorderThickness = new Thickness(4),
-                Background = new System.Windows.Media.SolidColorBrush(
-                    System.Windows.Media.Color.FromArgb(60, 61, 165, 255)),
-            },
+            Content = content,
         };
+
+        // Natural size in DIPs; converted to physical pixels once we know the monitor's DPI.
+        content.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+        double dipW = content.DesiredSize.Width;
+        double dipH = content.DesiredSize.Height;
 
         flash.SourceInitialized += (_, _) =>
         {
@@ -275,8 +287,29 @@ public partial class WidgetWindow : Window
             int ex = GetWindowLong(hwnd, GWL_EXSTYLE);
             SetWindowLong(hwnd, GWL_EXSTYLE,
                 ex | WS_EX_TRANSPARENT | WS_EX_LAYERED | WS_EX_NOACTIVATE | WS_EX_TOOLWINDOW);
-            SetWindowPos(hwnd, HWND_TOPMOST, bounds.Left, bounds.Top, bounds.Width, bounds.Height,
-                SWP_SHOWWINDOW | SWP_NOACTIVATE);
+
+            // Move onto the target's monitor (still hidden) so GetDpiForWindow reports that
+            // monitor's DPI, then size and show in one go.
+            SetWindowPos(hwnd, HWND_TOPMOST, point.X, point.Y, 0, 0, SWP_NOSIZE | SWP_NOACTIVATE);
+            double scale = GetDpiForWindow(hwnd) / 96.0;
+            if (scale <= 0) scale = 1;
+
+            int markerPx = (int)Math.Round(FlashMarkerDip * scale);
+            int width = (int)Math.Ceiling(dipW * scale);
+            int height = (int)Math.Ceiling(dipH * scale);
+
+            // Label goes to the right of the marker unless that would run off the desktop.
+            int vsRight = GetSystemMetrics(SM_XVIRTUALSCREEN) + GetSystemMetrics(SM_CXVIRTUALSCREEN);
+            bool labelOnLeft = pill is not null && point.X - markerPx / 2 + width > vsRight;
+            if (labelOnLeft)
+            {
+                Grid.SetColumn(marker, 2);
+                Grid.SetColumn(pill!, 0);
+            }
+
+            int left = labelOnLeft ? point.X + markerPx / 2 - width : point.X - markerPx / 2;
+            int top = point.Y - height / 2;
+            SetWindowPos(hwnd, HWND_TOPMOST, left, top, width, height, SWP_SHOWWINDOW | SWP_NOACTIVATE);
         };
 
         flash.Show();
@@ -288,6 +321,56 @@ public partial class WidgetWindow : Window
             flash.Close();
         };
         timer.Start();
+    }
+
+    // [marker] [gap] [key pill]; the pill is omitted when there is no label. Columns are
+    // swapped at show time if the pill would run off the right edge of the desktop.
+    private static (Grid Content, FrameworkElement Marker, FrameworkElement? Pill) BuildFlashContent(
+        Color accent, string? label)
+    {
+        var stroke = new SolidColorBrush(accent);
+
+        var marker = new Grid { Width = FlashMarkerDip, Height = FlashMarkerDip, VerticalAlignment = VerticalAlignment.Center };
+        marker.Children.Add(new Ellipse
+        {
+            Stroke = stroke,
+            StrokeThickness = 3,
+            Fill = new SolidColorBrush(Color.FromArgb(60, accent.R, accent.G, accent.B)),
+            Margin = new Thickness(2),
+        });
+        marker.Children.Add(new Rectangle { Fill = stroke, Height = 2, Width = 16, RadiusX = 1, RadiusY = 1 });
+        marker.Children.Add(new Rectangle { Fill = stroke, Width = 2, Height = 16, RadiusX = 1, RadiusY = 1 });
+
+        var content = new Grid();
+        content.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        content.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(label is null ? 0 : FlashLabelGapDip) });
+        content.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        Grid.SetColumn(marker, 0);
+        content.Children.Add(marker);
+
+        Border? pill = null;
+        if (label is not null)
+        {
+            pill = new Border
+            {
+                Background = stroke,
+                CornerRadius = new CornerRadius(7),
+                Padding = new Thickness(9, 4, 9, 4),
+                VerticalAlignment = VerticalAlignment.Center,
+                Child = new TextBlock
+                {
+                    Text = label,
+                    Foreground = Brushes.White,
+                    FontWeight = FontWeights.Bold,
+                    FontSize = 13,
+                    FontFamily = (FontFamily)Application.Current.FindResource("Font.Ui"),
+                },
+            };
+            Grid.SetColumn(pill, 2);
+            content.Children.Add(pill);
+        }
+
+        return (content, marker, pill);
     }
 
     // ---- Settings ---------------------------------------------------------------------

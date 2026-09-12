@@ -23,7 +23,7 @@ public partial class App : Application
 
     private HotkeyService? _hotkeys;
     private ClickEngine? _engine;
-    private RegionStore? _store;
+    private TargetStore? _store;
     private SettingsStore? _settingsStore;
     private AppSettings? _settings;
     private WidgetWindow? _widget;
@@ -45,7 +45,7 @@ public partial class App : Application
         // Closing the widget hides it to tray; the app lives until Exit is chosen.
         ShutdownMode = ShutdownMode.OnExplicitShutdown;
 
-        _store = new RegionStore();
+        _store = new TargetStore();
         _settingsStore = new SettingsStore();
         _settings = _settingsStore.Load();
 
@@ -87,7 +87,7 @@ public partial class App : Application
         _showReg = ThreadPool.RegisterWaitForSingleObject(_showEvent,
             (_, _) => Dispatcher.Invoke(() => _widget?.ShowFromTray()), null, Timeout.Infinite, false);
 
-        Log.Info($"Started; {_store.Regions.Count} region(s), hook {(_hotkeys.IsRunning ? "up" : "down")}.");
+        Log.Info($"Started; {_store.Targets.Count} target(s), hook {(_hotkeys.IsRunning ? "up" : "down")}.");
     }
 
     private void WireExceptionLogging()
