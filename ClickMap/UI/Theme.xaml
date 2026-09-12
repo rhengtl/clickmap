@@ -303,6 +303,8 @@
                         </ToggleButton>
                         <ContentPresenter Content="{TemplateBinding SelectionBoxItem}"
                                           ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"
+                                          ContentTemplateSelector="{TemplateBinding ItemTemplateSelector}"
+                                          ContentStringFormat="{TemplateBinding SelectionBoxItemStringFormat}"
                                           IsHitTestVisible="False" Margin="11,0,28,0"
                                           VerticalAlignment="Center" HorizontalAlignment="Left" />
                         <Popup x:Name="PART_Popup" AllowsTransparency="True" Placement="Bottom"
