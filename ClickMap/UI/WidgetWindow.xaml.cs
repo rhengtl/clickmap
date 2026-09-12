@@ -393,7 +393,7 @@ public partial class WidgetWindow : Window
     /// <summary>Pushes the current settings into the live services. Safe to call repeatedly.</summary>
     public void ApplySettings()
     {
-        _click.MoveCursorToTarget = _settings.MoveCursorToTarget;
+        _click.Strategy = _settings.ClickStrategy;
         _engine.PanicKey = _settings.PanicKey;
     }
 

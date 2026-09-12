@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace ClickMap.Models;
 
 /// <summary>
@@ -18,11 +20,25 @@ public sealed class AppSettings
     /// <summary>Click type applied to newly created targets.</summary>
     public ClickType DefaultClickType { get; set; } = ClickType.LeftClick;
 
+    /// <summary>How clicks are delivered; see <see cref="Models.ClickStrategy"/>.</summary>
+    public ClickStrategy ClickStrategy { get; set; } = ClickStrategy.RestoreCursor;
+
     /// <summary>
-    /// Click strategy: true = move the cursor to the target then click (most compatible);
-    /// false = send an absolute click without moving the cursor.
+    /// Migration shim for the pre-1.1 boolean. <c>true</c> maps to <see cref="ClickStrategy.MoveCursor"/>
+    /// (what it did); <c>false</c> maps to <see cref="ClickStrategy.RestoreCursor"/> (what it
+    /// was meant to do). Never written back.
     /// </summary>
-    public bool MoveCursorToTarget { get; set; } = true;
+    [JsonPropertyName("MoveCursorToTarget")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public bool? MoveCursorToTarget
+    {
+        get => null;
+        set
+        {
+            if (value is { } move)
+                ClickStrategy = move ? ClickStrategy.MoveCursor : ClickStrategy.RestoreCursor;
+        }
+    }
 
     /// <summary>Briefly mark the target point when a click fires.</summary>
     public bool VisualFeedback { get; set; } = true;

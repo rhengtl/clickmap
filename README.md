@@ -86,8 +86,14 @@ Open via the **⚙** button or tray **Settings…**:
 
 - **Launch at Windows startup**
 - **Default click type** for new targets
-- **Click strategy** — move cursor to target then click (most compatible), or send an
-  absolute click without moving the cursor
+- **Cursor behaviour** — what happens to your mouse cursor when a target fires:
+  - *Click and put the cursor back* (default) — the move to the target, the click, and
+    the move back are one input batch, so the cursor ends where it was and is away for
+    well under a frame. Works with any app.
+  - *Click without touching the cursor* — posts the click straight to the window under
+    the target. The cursor never moves, but only apps that trust message coordinates
+    respond (classic Win32 controls); WPF apps, games, and elevated windows ignore it.
+  - *Move the cursor to the target* — moves the cursor there and leaves it.
 - **Visual / sound feedback** on each click
 - **Panic key** — global key that instantly toggles pause (default `Ctrl+Alt+P`)
 
@@ -100,7 +106,7 @@ Open via the **⚙** button or tray **Settings…**:
 | `HotkeyService` | Global low-level keyboard hook (`WH_KEYBOARD_LL`) on a dedicated message-pump thread. The callback is O(1) and offloads work so input is never blocked. |
 | `TargetStore` | Loads/saves targets; O(1) key→target index; atomic writes; corrupt-file quarantine; migrates pre-1.1 `regions.json`. |
 | `ClickEngine` | Matches a key to a target and dispatches the click; handles pause and the panic key. |
-| `ClickService` | Synthesizes the click via `SendInput` with correct virtual-desktop absolute mapping. |
+| `ClickService` | Delivers the click per the chosen cursor behaviour: `SendInput` (with or without restoring the cursor) or `PostMessage` straight to the window. |
 | UI | Floating `WidgetWindow`, click-to-pick `TargetOverlay`, `TargetEditorWindow`, `SettingsWindow`, tray icon. |
 
 Coordinates are stored in **physical pixels** and the app is **Per-Monitor-V2 DPI aware**,
@@ -113,6 +119,9 @@ so targets stay accurate across multi-monitor / mixed-DPI setups.
 - **Keys don't trigger clicks** — make sure dispatch isn't paused (widget toggle / tray).
   Check the log in `%APPDATA%\ClickMap\logs\`.
 - **"keyboard hook failed"** — another tool may be interfering; restart the app.
+- **The click goes through but the app doesn't react** — if cursor behaviour is set to
+  *Click without touching the cursor*, the app may be one that ignores posted clicks
+  (WPF, games, elevated windows). Switch to *Click and put the cursor back*.
 - **A key fires the wrong/no target** — check for a conflict warning (a key assigned to
   multiple targets only fires the first). Give them distinct keys.
 - **The overlay crosshair looks slightly off on a second monitor** — the saved coordinates are

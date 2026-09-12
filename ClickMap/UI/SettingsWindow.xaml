@@ -35,9 +35,10 @@
             <TextBlock Text="CLICKING" Style="{StaticResource T.SectionHeader}" Margin="0,18,0,8" />
             <TextBlock Text="Default click type for new targets" Margin="0,0,0,5" />
             <ComboBox x:Name="ClickTypeBox" Margin="0,0,0,12" />
-            <CheckBox x:Name="MoveCursorCheck" Content="Move cursor to target before clicking" />
-            <TextBlock Text="When off, sends an absolute click without moving the cursor."
-                       Style="{StaticResource T.Caption}" Margin="28,4,0,0" TextWrapping="Wrap" />
+            <TextBlock Text="Cursor behaviour when a target fires" Margin="0,0,0,5" />
+            <ComboBox x:Name="StrategyBox" DisplayMemberPath="Label"
+                      SelectionChanged="StrategyBox_SelectionChanged" />
+            <TextBlock x:Name="StrategyHint" Style="{StaticResource T.Caption}" Margin="0,5,0,0" TextWrapping="Wrap" />
 
             <!-- Feedback -->
             <TextBlock Text="FEEDBACK" Style="{StaticResource T.SectionHeader}" Margin="0,18,0,8" />

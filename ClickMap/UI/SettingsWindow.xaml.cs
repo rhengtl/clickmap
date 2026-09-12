@@ -1,4 +1,5 @@
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Input;
 using ClickMap.Models;
 using ClickMap.Services;
@@ -15,6 +16,17 @@ public partial class SettingsWindow : Window
     private KeyCombo? _panicKey;
     private bool _capturingPanic;
 
+    private sealed record StrategyOption(ClickStrategy Value, string Label, string Hint);
+
+    private static readonly StrategyOption[] StrategyOptions =
+    [
+        new(ClickStrategy.RestoreCursor, "Click and put the cursor back",
+            "Moves to the target, clicks, and returns in one input batch — the cursor ends where it was. Works with any app."),
+        new(ClickStrategy.DirectToWindow, "Click without touching the cursor",
+            "Posts the click straight to the window under the target; the cursor never moves. Only apps that trust message coordinates respond (classic Win32 controls) — WPF apps, games and elevated windows ignore it."),
+        new(ClickStrategy.MoveCursor, "Move the cursor to the target",
+            "Moves the cursor to the target and leaves it there."),
+    ];
     public SettingsWindow(AppSettings settings)
     {
         InitializeComponent();
@@ -25,7 +37,8 @@ public partial class SettingsWindow : Window
         StartupCheck.IsChecked = StartupRegistration.IsEnabled();
         ClickTypeBox.ItemsSource = Enum.GetValues<ClickType>();
         ClickTypeBox.SelectedItem = settings.DefaultClickType;
-        MoveCursorCheck.IsChecked = settings.MoveCursorToTarget;
+        StrategyBox.ItemsSource = StrategyOptions;
+        StrategyBox.SelectedItem = StrategyOptions.FirstOrDefault(o => o.Value == settings.ClickStrategy) ?? StrategyOptions[0];
         VisualFeedbackCheck.IsChecked = settings.VisualFeedback;
         SoundFeedbackCheck.IsChecked = settings.SoundFeedback;
         UpdatePanicLabel();
@@ -69,11 +82,14 @@ public partial class SettingsWindow : Window
 
     private void UpdatePanicLabel() => PanicKeyButton.Content = _panicKey?.Display ?? "(none)";
 
+    private void StrategyBox_SelectionChanged(object sender, SelectionChangedEventArgs e) =>
+        StrategyHint.Text = (StrategyBox.SelectedItem as StrategyOption)?.Hint ?? string.Empty;
+
     private void Ok_Click(object sender, RoutedEventArgs e)
     {
         _settings.StartWithWindows = StartupCheck.IsChecked == true;
         _settings.DefaultClickType = (ClickType)(ClickTypeBox.SelectedItem ?? ClickType.LeftClick);
-        _settings.MoveCursorToTarget = MoveCursorCheck.IsChecked == true;
+        _settings.ClickStrategy = ((StrategyOption)StrategyBox.SelectedItem).Value;
         _settings.VisualFeedback = VisualFeedbackCheck.IsChecked == true;
         _settings.SoundFeedback = SoundFeedbackCheck.IsChecked == true;
         _settings.PanicKey = _panicKey;

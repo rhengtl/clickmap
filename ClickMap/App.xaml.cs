@@ -56,7 +56,7 @@ public partial class App : Application
         _store.LoadWarning += (_, msg) => Log.Warn(msg);
         _store.Load();
 
-        var click = new ClickService { MoveCursorToTarget = _settings.MoveCursorToTarget };
+        var click = new ClickService { Strategy = _settings.ClickStrategy };
         _hotkeys = new HotkeyService();
         _engine = new ClickEngine(_hotkeys, _store, click)
         {
