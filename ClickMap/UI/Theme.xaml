@@ -255,6 +255,36 @@
         </Setter>
     </Style>
 
+    <!-- ===================== ToolTip ================================ -->
+    <!-- The default WPF tooltip is light; with the app's light text it reads as an empty
+         box. Restyle it to the dark surface with explicit colours. -->
+    <Style TargetType="ToolTip">
+        <Setter Property="Background" Value="{StaticResource B.Surface}" />
+        <Setter Property="Foreground" Value="{StaticResource B.Text}" />
+        <Setter Property="BorderBrush" Value="{StaticResource B.Border}" />
+        <Setter Property="FontFamily" Value="{StaticResource Font.Ui}" />
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="Padding" Value="10,6" />
+        <Setter Property="HasDropShadow" Value="False" />
+        <Setter Property="Placement" Value="Bottom" />
+        <Setter Property="VerticalOffset" Value="4" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ToolTip">
+                    <Border Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="1"
+                            CornerRadius="7" Padding="{TemplateBinding Padding}" Margin="6"
+                            SnapsToDevicePixels="True">
+                        <Border.Effect>
+                            <DropShadowEffect BlurRadius="12" ShadowDepth="0" Opacity="0.45" Color="#000000" />
+                        </Border.Effect>
+                        <ContentPresenter TextBlock.Foreground="{TemplateBinding Foreground}"
+                                          TextBlock.FontSize="{TemplateBinding FontSize}" />
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
     <!-- ===================== ComboBox =============================== -->
     <Style TargetType="ComboBoxItem">
         <Setter Property="Foreground" Value="{StaticResource B.Text}" />

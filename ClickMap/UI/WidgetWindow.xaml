@@ -126,13 +126,13 @@
                         <ColumnDefinition Width="*" />
                     </Grid.ColumnDefinitions>
                     <Button x:Name="EditButton" Grid.Column="0" Style="{StaticResource Btn.Subtle}"
-                            Margin="0,0,4,0" Click="Edit_Click" Content="Edit"
+                            Margin="0,0,4,0" Click="Edit_Click" Content="Edit" ToolTipService.ShowOnDisabled="True"
                             ToolTip="Edit the selected target (Enter / F2) — one at a time" />
                     <Button x:Name="ShowHideButton" Grid.Column="1" Style="{StaticResource Btn.Subtle}"
-                            Margin="4,0" Click="ShowHide_Click" Content="Show"
+                            Margin="4,0" Click="ShowHide_Click" Content="Show" ToolTipService.ShowOnDisabled="True"
                             ToolTip="Show or hide the selected targets on screen" />
                     <Button x:Name="DeleteButton" Grid.Column="2" Style="{StaticResource Btn.Danger}"
-                            Margin="4,0,0,0" Click="Delete_Click" Content="Delete"
+                            Margin="4,0,0,0" Click="Delete_Click" Content="Delete" ToolTipService.ShowOnDisabled="True"
                             ToolTip="Delete the selected targets (Del)" />
                 </Grid>
             </StackPanel>
